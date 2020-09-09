@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"sync"
 )
+
 // tracking request task
 type Task struct {
 	Url     string
@@ -23,17 +24,18 @@ type RequestPool struct {
 type Engine struct {
 	sync.Mutex
 	*EngineOption
-	Pool             *RequestPool
-	Parsers           []HTMLParser
+	Pool    *RequestPool
+	Parsers []HTMLParser
 }
 
 // share data in crawl process
 type Context struct {
-	Request *http.Request
+	Request  *http.Request
 	Response *http.Response
-	content map[string]interface{}
-	lock    *sync.Mutex
+	content  map[string]interface{}
+	lock     *sync.Mutex
 }
+
 // init engine config
 type EngineOption struct {
 	MaxRequest int
@@ -59,6 +61,7 @@ func (e *Engine) AddURLs(urls ...string) {
 		e.Pool.Tasks = append(e.Pool.Tasks, Task{Url: url})
 	}
 }
+
 // add parse
 func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 	for _, htmlParser := range parsers {
@@ -70,14 +73,15 @@ func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 // get task from pool task
 func (p *RequestPool) GetTask() Task {
 	p.Lock()
-	var task Task
-	task, p.Tasks = p.Tasks[0], p.Tasks[1:]
+	task := p.Tasks[0]
+	copy(p.Tasks, p.Tasks[1:])
 	task.Context = Context{
 		content: map[string]interface{}{},
 	}
 	defer p.Unlock()
 	return task
 }
+
 // complete task
 func (p *RequestPool) Complete() bool {
 	p.Lock()
@@ -107,12 +111,12 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 			taskChannel <- struct{}{}
 			// parse html
 			// run parser one by one
-			for _,parser := range e.Parsers{
+			for _, parser := range e.Parsers {
 				var parseWg sync.WaitGroup
 				parseWg.Add(1)
 				go func(wg *sync.WaitGroup) {
 					defer parseWg.Done()
-					err = ParseHTML(requestBody,parser,task.Context)
+					err = ParseHTML(requestBody, parser, task.Context)
 					if err != nil {
 						fmt.Print(err)
 					}
