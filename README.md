@@ -10,6 +10,8 @@ Simple web crawl
 
 ## Feature
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
+## Workflow
+![](./other/workflow.png)
 ## Example
 ```go
 
@@ -44,6 +46,29 @@ func main() {
 	<-stopChannel
 }
 ```
+## Middleware
+There some pre-build middleware in YouCrawl
 
+### UserAgent
+The middleware will read `./ua.txt` in the directory, and each line represents a UA string.
+
+middleware will random pick a ua in request
+```go
+func main() {
+    ...
+    e.UseMiddleware(youcrawl.UserAgentMiddleware)
+}
+```
+
+### Proxy
+The middleware will read `./proxy.txt` in the directory, and each line represents a http proxy.
+
+middleware will random pick a proxy in request
+```go
+func main() {
+    ...
+    e.UseMiddleware(youcrawl.ProxyMiddleware)
+}
+```
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FAllenTom%2FYouCrawl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FAllenTom%2FYouCrawl?ref=badge_large)
