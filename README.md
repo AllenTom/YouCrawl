@@ -12,12 +12,18 @@ Simple web crawl
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
 ## Example
 ```go
+
 func main() {
     // new engine
     e := youcrawl.NewEngine(&youcrawl.EngineOption{
         // Up to three tasks can be executed concurrently
         MaxRequest: 3
     })
+    // use your custom middleware
+    var LogMiddleware = func(r *http.Request,ctx Context) {
+		fmt.Println(fmt.Sprintf("request : %s",r.URL.String()))
+	}
+    e.UseMiddleware(LogMiddleware)
     // add urls to crawl
     e.AddURLs("https://www.zhihu.com")
     // add HTML parser

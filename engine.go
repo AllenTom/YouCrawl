@@ -24,8 +24,9 @@ type RequestPool struct {
 type Engine struct {
 	sync.Mutex
 	*EngineOption
-	Pool    *RequestPool
-	Parsers []HTMLParser
+	Pool        *RequestPool
+	Parsers     []HTMLParser
+	Middlewares []Middleware
 }
 
 // share data in crawl process
@@ -70,6 +71,11 @@ func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 
 }
 
+// add middleware
+func (e *Engine) UseMiddleware(middlewares ...Middleware) {
+	e.Middlewares = append(e.Middlewares, middlewares...)
+}
+
 // get task from pool task
 func (p *RequestPool) GetTask() Task {
 	p.Lock()
@@ -103,7 +109,7 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 		go func() {
 			<-taskChannel
 			task := e.Pool.GetTask()
-			requestBody, err := RequestWithURL(&task)
+			requestBody, err := RequestWithURL(&task, e.Middlewares...)
 			if err != nil {
 				taskChannel <- struct{}{}
 				return

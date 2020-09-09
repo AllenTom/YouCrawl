@@ -7,10 +7,13 @@ import (
 )
 
 // make request with url
-func RequestWithURL(task *Task) (io.Reader, error) {
+func RequestWithURL(task *Task, middlewares ...Middleware) (io.Reader, error) {
 	req, err := http.NewRequest("GET", task.Url, nil)
 	if err != nil {
 		return nil, err
+	}
+	for _, middleware := range middlewares {
+		middleware(req, task.Context)
 	}
 	client := &http.Client{}
 	resp, err := client.Do(req)
