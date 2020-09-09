@@ -8,7 +8,7 @@ import (
 )
 
 func TestReadUserAgentListFile(t *testing.T) {
-	_, err := ReadUserAgentListFile()
+	_, err := ReadListFile("./ua.txt")
 	if err != nil {
 		t.Error(err)
 	}

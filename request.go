@@ -12,10 +12,10 @@ func RequestWithURL(task *Task, middlewares ...Middleware) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
-	for _, middleware := range middlewares {
-		middleware(req, task.Context)
-	}
 	client := &http.Client{}
+	for _, middleware := range middlewares {
+		middleware(client, req, task.Context)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err

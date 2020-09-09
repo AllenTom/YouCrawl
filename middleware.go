@@ -4,4 +4,4 @@ import (
 	"net/http"
 )
 
-type Middleware func(r *http.Request, ctx Context)
+type Middleware func(c *http.Client, r *http.Request, ctx Context)

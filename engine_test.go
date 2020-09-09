@@ -17,7 +17,7 @@ func TestRequestWithURL(t *testing.T) {
 }
 
 func TestEngine_Run(t *testing.T) {
-	var LogMiddleware = func(r *http.Request, ctx Context) {
+	var LogMiddleware = func(c *http.Client, r *http.Request, ctx Context) {
 		fmt.Println(fmt.Sprintf("request : %s", r.URL.String()))
 	}
 	e := NewEngine(&EngineOption{MaxRequest: 3})

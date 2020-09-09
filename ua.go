@@ -1,11 +1,9 @@
 package youcrawl
 
 import (
-	"bufio"
 	"fmt"
 	"math/rand"
 	"net/http"
-	"os"
 )
 
 var UserAgents UserAgentPool
@@ -16,7 +14,7 @@ type UserAgentPool struct {
 }
 
 func init() {
-	agents, err := ReadUserAgentListFile()
+	agents, err := ReadListFile("./ua.txt")
 	if err != nil {
 		fmt.Println("read ua file fail,no ua will be used")
 		agents = make([]string, 0)
@@ -26,29 +24,18 @@ func init() {
 	}
 }
 func (p *UserAgentPool) GetUserAgent() string {
+	if len(p.List) == 0 {
+		return ""
+	}
 	randomIndex := rand.Intn(len(p.List))
 	pick := p.List[randomIndex]
 	fmt.Println(fmt.Sprintf("pick ua %d", randomIndex))
 	return pick
 }
-func ReadUserAgentListFile() ([]string, error) {
-	file, err := os.Open("./ua.txt")
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	uaList := make([]string, 0)
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		uaList = append(uaList, scanner.Text())
-	}
 
-	if err := scanner.Err(); err != nil {
-		return nil, err
+var UserAgentMiddleware Middleware = func(c *http.Client, r *http.Request, ctx Context) {
+	ua := UserAgents.GetUserAgent()
+	if len(ua) > 0 {
+		r.Header.Add("User-Agent", ua)
 	}
-	return uaList, err
-}
-
-var UserAgentMiddleware Middleware = func(r *http.Request, ctx Context) {
-	r.Header.Add("User-Agent", UserAgents.GetUserAgent())
 }
