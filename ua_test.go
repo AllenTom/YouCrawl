@@ -16,8 +16,8 @@ func TestReadUserAgentListFile(t *testing.T) {
 func TestUserAgentPool_GetUserAgent(t *testing.T) {
 	var wg sync.WaitGroup
 	for idx := 0; idx < 10; idx++ {
+		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
-			wg.Add(1)
 			defer wg.Done()
 			UserAgents.GetUserAgent()
 
