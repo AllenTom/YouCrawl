@@ -1,33 +1,49 @@
 package youcrawl
 
 import (
+	"fmt"
+	"net/http"
 	"sync"
 )
-
-type Request struct {
-	Url string
+// tracking request task
+type Task struct {
+	Url     string
+	Context Context
 }
+
+// request task pool
 type RequestPool struct {
-	Tasks         []Request
+	Tasks         []Task
 	Total         int
 	CompleteCount int
 	sync.Mutex
 }
+
+// youcrawl engine
 type Engine struct {
 	sync.Mutex
 	*EngineOption
 	Pool             *RequestPool
-	RunningTaskCount int
+	Parsers           []HTMLParser
 }
+
+// share data in crawl process
+type Context struct {
+	Request *http.Request
+	Response *http.Response
+	content map[string]interface{}
+	lock    *sync.Mutex
+}
+// init engine config
 type EngineOption struct {
 	MaxRequest int
 }
 
+// init new engine
 func NewEngine(option *EngineOption) *Engine {
 	newEngine := &Engine{
-		RunningTaskCount: 0,
 		Pool: &RequestPool{
-			Tasks:         []Request{},
+			Tasks:         []Task{},
 			CompleteCount: 0,
 		},
 		EngineOption: option,
@@ -36,20 +52,33 @@ func NewEngine(option *EngineOption) *Engine {
 	return newEngine
 }
 
+// add url to crawl
 func (e *Engine) AddURLs(urls ...string) {
 	e.Pool.Total += len(urls)
 	for _, url := range urls {
-		e.Pool.Tasks = append(e.Pool.Tasks, Request{Url: url})
+		e.Pool.Tasks = append(e.Pool.Tasks, Task{Url: url})
 	}
 }
+// add parse
+func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
+	for _, htmlParser := range parsers {
+		e.Parsers = append(e.Parsers, htmlParser)
+	}
 
-func (p *RequestPool) GetTask() Request {
+}
+
+// get task from pool task
+func (p *RequestPool) GetTask() Task {
 	p.Lock()
-	var task Request
+	var task Task
 	task, p.Tasks = p.Tasks[0], p.Tasks[1:]
+	task.Context = Context{
+		content: map[string]interface{}{},
+	}
 	defer p.Unlock()
 	return task
 }
+// complete task
 func (p *RequestPool) Complete() bool {
 	p.Lock()
 	defer p.Unlock()
@@ -60,6 +89,7 @@ func (p *RequestPool) Complete() bool {
 	return false
 }
 
+// run crawl engine
 func (e *Engine) Run(stopChannel chan<- struct{}) {
 	taskChannel := make(chan struct{}, e.MaxRequest)
 	for idx := 0; idx < e.MaxRequest; idx++ {
@@ -69,12 +99,26 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 		go func() {
 			<-taskChannel
 			task := e.Pool.GetTask()
-			err := RequestWithURL(task.Url)
+			requestBody, err := RequestWithURL(&task)
 			if err != nil {
 				taskChannel <- struct{}{}
 				return
 			}
 			taskChannel <- struct{}{}
+			// parse html
+			// run parser one by one
+			for _,parser := range e.Parsers{
+				var parseWg sync.WaitGroup
+				parseWg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer parseWg.Done()
+					err = ParseHTML(requestBody,parser,task.Context)
+					if err != nil {
+						fmt.Print(err)
+					}
+				}(&parseWg)
+				parseWg.Wait()
+			}
 
 			// exit run if no task
 			if e.Pool.Complete() {
