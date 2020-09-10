@@ -4,24 +4,7 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"testing"
-	"time"
 )
-
-type GlobalStorePipeline struct {
-}
-
-func (g *GlobalStorePipeline) Process(item *Item, store *GlobalStore) error {
-	item.SetValue("time", time.Now().Format("2006-01-02 15:04:05"))
-	store.Lock()
-	defer store.Unlock()
-	if store.Content["items"] == nil {
-		store.Content["items"] = make([]map[string]interface{}, 0)
-	}
-	rawItems := store.Content["items"]
-	items := rawItems.([]map[string]interface{})
-	store.Content["items"] = append(items, item.Store)
-	return nil
-}
 
 type PrintGlobalStorePostProcess struct {
 }
