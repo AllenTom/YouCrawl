@@ -1,8 +1,6 @@
 package youcrawl
 
 import (
-	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"sync"
 	"testing"
 )
@@ -30,11 +28,7 @@ func TestUserAgentPool_GetUserAgent(t *testing.T) {
 func TestEngine_UseUAMiddleware(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 3})
 	e.AddURLs("https://www.example.com", "https://www.example.com", "https://www.example.com")
-	e.AddHTMLParser(func(doc *goquery.Document, ctx Context) {
-		title := doc.Find("title").Text()
-		fmt.Println(fmt.Sprintf("%s [%d]", ctx.Request.URL.String(), ctx.Response.StatusCode))
-		fmt.Println(title)
-	})
+	e.AddHTMLParser(DefaultTestParser)
 	e.UseMiddleware(UserAgentMiddleware)
 	stopChannel := make(chan struct{})
 	e.Run(stopChannel)

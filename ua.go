@@ -29,7 +29,6 @@ func (p *UserAgentPool) GetUserAgent() string {
 	}
 	randomIndex := rand.Intn(len(p.List))
 	pick := p.List[randomIndex]
-	fmt.Println(fmt.Sprintf("pick ua %d", randomIndex))
 	return pick
 }
 

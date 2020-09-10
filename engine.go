@@ -27,6 +27,7 @@ type Engine struct {
 	Pool        *RequestPool
 	Parsers     []HTMLParser
 	Middlewares []Middleware
+	Pipelines   []Pipeline
 }
 
 // share data in crawl process
@@ -34,6 +35,7 @@ type Context struct {
 	Request  *http.Request
 	Response *http.Response
 	content  map[string]interface{}
+	Item     Item
 	lock     *sync.Mutex
 }
 
@@ -50,6 +52,9 @@ func NewEngine(option *EngineOption) *Engine {
 			CompleteCount: 0,
 		},
 		EngineOption: option,
+		Pipelines:    []Pipeline{},
+		Middlewares:  []Middleware{},
+		Parsers:      []HTMLParser{},
 	}
 
 	return newEngine
@@ -71,6 +76,13 @@ func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 
 }
 
+// add pipelines
+func (e *Engine) AddPipelines(pipelines ...Pipeline) {
+	for _, pipeline := range pipelines {
+		e.Pipelines = append(e.Pipelines, pipeline)
+	}
+}
+
 // add middleware
 func (e *Engine) UseMiddleware(middlewares ...Middleware) {
 	e.Middlewares = append(e.Middlewares, middlewares...)
@@ -83,6 +95,7 @@ func (p *RequestPool) GetTask() Task {
 	copy(p.Tasks, p.Tasks[1:])
 	task.Context = Context{
 		content: map[string]interface{}{},
+		Item:    Item{Store: map[string]interface{}{}},
 	}
 	defer p.Unlock()
 	return task
@@ -108,6 +121,12 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 	for idx := 0; idx < len(e.Pool.Tasks); idx++ {
 		go func() {
 			<-taskChannel
+			defer func() {
+				// exit run if no task
+				if e.Pool.Complete() {
+					stopChannel <- struct{}{}
+				}
+			}()
 			task := e.Pool.GetTask()
 			requestBody, err := RequestWithURL(&task, e.Middlewares...)
 			if err != nil {
@@ -118,22 +137,21 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 			// parse html
 			// run parser one by one
 			for _, parser := range e.Parsers {
-				var parseWg sync.WaitGroup
-				parseWg.Add(1)
-				go func(wg *sync.WaitGroup) {
-					defer parseWg.Done()
-					err = ParseHTML(requestBody, parser, task.Context)
-					if err != nil {
-						fmt.Print(err)
-					}
-				}(&parseWg)
-				parseWg.Wait()
+				err = ParseHTML(requestBody, parser, task.Context)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
 			}
 
-			// exit run if no task
-			if e.Pool.Complete() {
-				stopChannel <- struct{}{}
+			for _, pipeline := range e.Pipelines {
+				err := pipeline.Process(&task.Context.Item)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
 			}
+
 		}()
 	}
 
