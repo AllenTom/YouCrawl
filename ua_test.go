@@ -30,7 +30,8 @@ func TestEngine_UseUAMiddleware(t *testing.T) {
 	e.AddURLs("https://www.example.com", "https://www.example.com", "https://www.example.com")
 	e.AddHTMLParser(DefaultTestParser)
 	e.UseMiddleware(UserAgentMiddleware)
-	stopChannel := make(chan struct{})
-	e.Run(stopChannel)
-	<-stopChannel
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }

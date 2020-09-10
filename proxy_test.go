@@ -1,6 +1,7 @@
 package youcrawl
 
 import (
+	"sync"
 	"testing"
 )
 
@@ -9,7 +10,8 @@ func TestProxy_UseMiddleware(t *testing.T) {
 	e.AddURLs("https://www.example.com")
 	e.AddHTMLParser(DefaultTestParser)
 	e.UseMiddleware(ProxyMiddleware)
-	stopChannel := make(chan struct{})
-	e.Run(stopChannel)
-	<-stopChannel
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }

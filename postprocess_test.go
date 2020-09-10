@@ -3,6 +3,7 @@ package youcrawl
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"sync"
 	"testing"
 )
 
@@ -27,7 +28,8 @@ func TestPostProcess(t *testing.T) {
 	e.UseMiddleware(UserAgentMiddleware)
 	e.AddPipelines(&GlobalStorePipeline{})
 	e.AddPostProcess(&PrintGlobalStorePostProcess{})
-	stopChannel := make(chan struct{})
-	e.Run(stopChannel)
-	<-stopChannel
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }

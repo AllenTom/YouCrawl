@@ -2,6 +2,7 @@ package youcrawl
 
 import (
 	"github.com/PuerkitoBio/goquery"
+	"sync"
 	"testing"
 )
 
@@ -21,7 +22,8 @@ func TestEngine(t *testing.T) {
 	}
 	e.AddPipelines(itemLogPipeline)
 	e.UseMiddleware(UserAgentMiddleware)
-	stopChannel := make(chan struct{})
-	e.Run(stopChannel)
-	<-stopChannel
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }

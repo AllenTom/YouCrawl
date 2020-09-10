@@ -3,7 +3,7 @@ package youcrawl
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"net/http"
+	"sync"
 	"testing"
 )
 
@@ -25,16 +25,16 @@ func TestRequestWithURL(t *testing.T) {
 }
 
 func TestEngine_Run(t *testing.T) {
-	var LogMiddleware = func(c *http.Client, r *http.Request, ctx Context) {
-		fmt.Println(fmt.Sprintf("request : %s", r.URL.String()))
-	}
 	e := NewEngine(&EngineOption{MaxRequest: 3})
-	e.AddURLs("https://www.example.com")
-	e.AddHTMLParser(DefaultTestParser)
-	e.UseMiddleware(LogMiddleware)
-	stopChannel := make(chan struct{})
-	e.Run(stopChannel)
-	<-stopChannel
+	e.AddURLs("https://www.qq.com", "https://www.qq.com", "https://www.qq.com")
+	//e.AddHTMLParser(func(doc *goquery.Document, ctx Context) error {
+	//	ctx
+	//	return nil
+	//})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }
 
 func TestParseHTML(t *testing.T) {
@@ -81,7 +81,8 @@ func (i *ItemLogPipeline) Process(item *Item, _ *GlobalStore) error {
 func TestWebNotReach(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 3})
 	e.AddURLs("http://www.eeeeeeeeeeeeexaaaaaaaaaaaaaaample.com")
-	stopChannel := make(chan struct{})
-	e.Run(stopChannel)
-	<-stopChannel
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }
