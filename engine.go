@@ -2,9 +2,12 @@ package youcrawl
 
 import (
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
 )
+
+var EngineLogger *logrus.Entry = logrus.WithField("scope", "engine")
 
 // tracking request task
 type Task struct {
@@ -149,6 +152,7 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 			task := e.Pool.GetTask(e)
 			requestBody, err := RequestWithURL(&task, e.Middlewares...)
 			if err != nil {
+				EngineLogger.Error(err)
 				taskChannel <- struct{}{}
 				return
 			}

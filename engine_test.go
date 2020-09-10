@@ -76,3 +76,12 @@ func (i *ItemLogPipeline) Process(item *Item, _ *GlobalStore) error {
 	}
 	return nil
 }
+
+//http://www.eeeeeeeeeeeeexaaaaaaaaaaaaaaample.com/
+func TestWebNotReach(t *testing.T) {
+	e := NewEngine(&EngineOption{MaxRequest: 3})
+	e.AddURLs("http://www.eeeeeeeeeeeeexaaaaaaaaaaaaaaample.com")
+	stopChannel := make(chan struct{})
+	e.Run(stopChannel)
+	<-stopChannel
+}

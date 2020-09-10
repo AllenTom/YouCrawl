@@ -70,5 +70,49 @@ func main() {
     e.UseMiddleware(youcrawl.ProxyMiddleware)
 }
 ```
+
+## Pipelines
+pipleline handle with item
+
+### custom you pipeline
+just implement `youcrawl.Pipeline` interface
+```go
+type MyCustomPipeline struct {
+
+}
+
+func (g *MyCustomPipeline) Process(item *youcrawl.Item, store *youcrawl.GlobalStore) error {
+	item.SetValue("time",time.Now().Format("2006-01-02 15:04:05"))
+	return nil
+}
+```
+call `e.AddPipelines()`
+
+### GlobalStorePipeline
+global store will store data in engine scope,share to all tasks.
+
+this pipeline will save `item` in global store with key of `items`
+```go
+e.AddPipelines(&GlobalStorePipeline{})
+```
+
+## Post-Process
+post-process run on all task are done,usually used to store the data in the database
+
+### custom post-process
+just implement `youcrawl.PostProcess` interface.
+```go
+type PrintGlobalStorePostProcess struct {}
+
+func (p *PrintGlobalStorePostProcess) Process(store *youcrawl.GlobalStore) error {
+	items := (store.Content["items"]).([]map[string]interface{})
+	fmt.Println(fmt.Sprintf("total crawl %d items",len(items)))
+	return nil
+}
+```
+call ` e.AddPostProcess()` to add your custom post-process
+
+### OutputJsonPostProcess
+write `GlobalStore["items"]` in to json file
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FAllenTom%2FYouCrawl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FAllenTom%2FYouCrawl?ref=badge_large)
