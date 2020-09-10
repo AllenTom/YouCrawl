@@ -28,15 +28,18 @@ type Engine struct {
 	Parsers     []HTMLParser
 	Middlewares []Middleware
 	Pipelines   []Pipeline
+	GlobalStore GlobalStore
+	PostProcess []PostProcess
 }
 
 // share data in crawl process
 type Context struct {
-	Request  *http.Request
-	Response *http.Response
-	content  map[string]interface{}
-	Item     Item
-	lock     *sync.Mutex
+	Request     *http.Request
+	Response    *http.Response
+	content     map[string]interface{}
+	Item        Item
+	lock        *sync.Mutex
+	GlobalStore *GlobalStore
 }
 
 // init engine config
@@ -55,6 +58,9 @@ func NewEngine(option *EngineOption) *Engine {
 		Pipelines:    []Pipeline{},
 		Middlewares:  []Middleware{},
 		Parsers:      []HTMLParser{},
+		GlobalStore: GlobalStore{
+			Content: map[string]interface{}{},
+		},
 	}
 
 	return newEngine
@@ -88,14 +94,20 @@ func (e *Engine) UseMiddleware(middlewares ...Middleware) {
 	e.Middlewares = append(e.Middlewares, middlewares...)
 }
 
+// add postprocess
+func (e *Engine) AddPostProcess(postprocessList ...PostProcess) {
+	e.PostProcess = append(e.PostProcess, postprocessList...)
+}
+
 // get task from pool task
-func (p *RequestPool) GetTask() Task {
+func (p *RequestPool) GetTask(e *Engine) Task {
 	p.Lock()
 	task := p.Tasks[0]
 	copy(p.Tasks, p.Tasks[1:])
 	task.Context = Context{
-		content: map[string]interface{}{},
-		Item:    Item{Store: map[string]interface{}{}},
+		content:     map[string]interface{}{},
+		Item:        Item{Store: map[string]interface{}{}},
+		GlobalStore: &e.GlobalStore,
 	}
 	defer p.Unlock()
 	return task
@@ -124,10 +136,17 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 			defer func() {
 				// exit run if no task
 				if e.Pool.Complete() {
+					// run post process
+					for _, postProcess := range e.PostProcess {
+						err := postProcess.Process(&e.GlobalStore)
+						if err != nil {
+							fmt.Println(err)
+						}
+					}
 					stopChannel <- struct{}{}
 				}
 			}()
-			task := e.Pool.GetTask()
+			task := e.Pool.GetTask(e)
 			requestBody, err := RequestWithURL(&task, e.Middlewares...)
 			if err != nil {
 				taskChannel <- struct{}{}
@@ -145,7 +164,7 @@ func (e *Engine) Run(stopChannel chan<- struct{}) {
 			}
 
 			for _, pipeline := range e.Pipelines {
-				err := pipeline.Process(&task.Context.Item)
+				err := pipeline.Process(&task.Context.Item, &e.GlobalStore)
 				if err != nil {
 					fmt.Println(err)
 					return

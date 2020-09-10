@@ -63,7 +63,7 @@ type ItemLogPipeline struct {
 	Options ItemLogPipelineOption
 }
 
-func (i *ItemLogPipeline) Process(item *Item) error {
+func (i *ItemLogPipeline) Process(item *Item, _ *GlobalStore) error {
 	if i.Options.PrintTitle {
 		title, err := item.GetString("title")
 		if err != nil {
