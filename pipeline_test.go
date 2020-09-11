@@ -30,8 +30,9 @@ func TestEngine(t *testing.T) {
 }
 
 func TestImageDownloadPipeline_Process(t *testing.T) {
+	gb := MemoryGlobalStore{}
 	downloadPipeline := ImageDownloadPipeline{
-		GetStoreFileFolder: func(item *Item, store *GlobalStore) string {
+		GetStoreFileFolder: func(item *Item, store GlobalStore) string {
 			return "./download/crawl"
 		},
 		MaxDownload: 2,
@@ -43,14 +44,11 @@ func TestImageDownloadPipeline_Process(t *testing.T) {
 		&Item{
 			Store: map[string]interface{}{
 				"downloadImgURLs": []string{
-					"https://www.flaticon.com/svg/static/icons/svg/3408/3408545.svg",
-					"https://www.flaticon.com/svg/static/icons/svg/3408/3408540.svg",
-					"https://www.flaticon.com/svg/static/icons/svg/3408/3408678.svg",
-					"https://www.flaticon.com/svg/static/icons/svg/3408/3408736.svg",
+					"https://github.com/AllenTom/YouCrawl/raw/master/other/workflow.png",
 				},
 			},
 		},
-		&GlobalStore{},
+		&gb,
 	)
 	if err != nil {
 		t.Error(err)

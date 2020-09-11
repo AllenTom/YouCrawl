@@ -39,7 +39,7 @@ type Context struct {
 	Response    *http.Response
 	content     map[string]interface{}
 	Item        Item
-	GlobalStore *GlobalStore
+	GlobalStore GlobalStore
 	Pool        *RequestPool
 }
 
@@ -50,6 +50,11 @@ type EngineOption struct {
 
 // init new engine
 func NewEngine(option *EngineOption) *Engine {
+	globalStore := MemoryGlobalStore{}
+	err := globalStore.Init()
+	if err != nil {
+		logrus.Fatal("init global store failed")
+	}
 	newEngine := &Engine{
 		Pool: &RequestPool{
 			Tasks:    []Task{},
@@ -59,9 +64,7 @@ func NewEngine(option *EngineOption) *Engine {
 		Pipelines:    []Pipeline{},
 		Middlewares:  []Middleware{},
 		Parsers:      []HTMLParser{},
-		GlobalStore: GlobalStore{
-			Content: map[string]interface{}{},
-		},
+		GlobalStore:  &globalStore,
 	}
 
 	return newEngine
@@ -120,7 +123,7 @@ func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
 	}
 
 	for _, pipeline := range e.Pipelines {
-		err := pipeline.Process(&task.Context.Item, &e.GlobalStore)
+		err := pipeline.Process(&task.Context.Item, e.GlobalStore)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -153,7 +156,7 @@ Loop:
 
 	EngineLogger.Info("into post process")
 	for _, postProcess := range e.PostProcess {
-		err := postProcess.Process(&e.GlobalStore)
+		err := postProcess.Process(e.GlobalStore)
 		if err != nil {
 			fmt.Println(err)
 		}

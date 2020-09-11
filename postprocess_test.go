@@ -10,9 +10,14 @@ import (
 type PrintGlobalStorePostProcess struct {
 }
 
-func (p *PrintGlobalStorePostProcess) Process(store *GlobalStore) error {
-	items := (store.Content["items"]).([]map[string]interface{})
-	fmt.Println(fmt.Sprintf("total crawl %d items", len(items)))
+func (p *PrintGlobalStorePostProcess) Process(store GlobalStore) error {
+
+	rawItems := store.GetValue("items")
+	if rawItems != nil {
+		items := rawItems.([]map[string]interface{})
+		fmt.Println(fmt.Sprintf("total crawl %d items", len(items)))
+
+	}
 	return nil
 }
 

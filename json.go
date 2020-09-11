@@ -9,8 +9,9 @@ type OutputJsonPostProcess struct {
 	StorePath string
 }
 
-func (p *OutputJsonPostProcess) Process(store *GlobalStore) error {
-	file, err := json.MarshalIndent(store.Content["items"], "", " ")
+func (p *OutputJsonPostProcess) Process(store GlobalStore) error {
+	data := store.GetValue("items")
+	file, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
 		return err
 	}

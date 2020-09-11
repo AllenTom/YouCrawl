@@ -65,7 +65,7 @@ func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
 		if unRequestedTask != nil {
 			unRequestedTask.Context.Pool = p
 			unRequestedTask.Requested = true
-			unRequestedTask.Context.GlobalStore = &e.GlobalStore
+			unRequestedTask.Context.GlobalStore = e.GlobalStore
 			callbackChan <- unRequestedTask
 			return
 		}

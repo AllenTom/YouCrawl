@@ -12,17 +12,17 @@ import (
 )
 
 type Pipeline interface {
-	Process(item *Item, store *GlobalStore) error
+	Process(item *Item, store GlobalStore) error
 }
 
 type ImageDownloadPipeline struct {
-	GetStoreFileFolder func(item *Item, store *GlobalStore) string
-	GetSaveFileName    func(item *Item, store *GlobalStore, rawURL string) string
+	GetStoreFileFolder func(item *Item, store GlobalStore) string
+	GetSaveFileName    func(item *Item, store GlobalStore, rawURL string) string
 	MaxDownload        int
 	Middlewares        []Middleware
 }
 
-func (i *ImageDownloadPipeline) Process(item *Item, store *GlobalStore) error {
+func (i *ImageDownloadPipeline) Process(item *Item, store GlobalStore) error {
 	logger := logrus.WithField("scope", "Image Download Pipeline")
 	// prepare
 	rawDownloadURLs, err := item.GetValue("downloadImgURLs")
