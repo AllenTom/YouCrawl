@@ -211,7 +211,7 @@ func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
 	// parse html
 	// run parser one by one
 	for _, parser := range e.Parsers {
-		err = ParseHTML(requestBody, parser, task.Context)
+		err = ParseHTML(requestBody, parser, &task.Context)
 		if err != nil {
 			fmt.Println(err)
 			continue

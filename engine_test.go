@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var DefaultTestParser HTMLParser = func(doc *goquery.Document, ctx Context) error {
+var DefaultTestParser HTMLParser = func(doc *goquery.Document, ctx *Context) error {
 	title := doc.Find("title").Text()
 	//fmt.Println(fmt.Sprintf("%s [%d]", ctx.Request.URL.String(), ctx.Response.StatusCode))
 	fmt.Println(ctx.Request.Header.Get("User-Agent"))
@@ -45,11 +45,11 @@ func TestParseHTML(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = ParseHTML(bodyReader, func(doc *goquery.Document, ctx Context) error {
+	err = ParseHTML(bodyReader, func(doc *goquery.Document, ctx *Context) error {
 		title := doc.Find("title").Text()
 		fmt.Println(title)
 		return nil
-	}, Context{content: map[string]interface{}{}})
+	}, &Context{content: map[string]interface{}{}})
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,7 +92,7 @@ func TestAddTaskInRun(t *testing.T) {
 	var hasAdd int64 = 0
 	e := NewEngine(&EngineOption{MaxRequest: 5})
 	e.AddURLs("http://www.example.com")
-	e.AddHTMLParser(func(doc *goquery.Document, ctx Context) error {
+	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
 		if hasAdd == 0 {
 			ctx.Pool.AddURLs("http://www.example.com")
 			atomic.AddInt64(&hasAdd, 1)
