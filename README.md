@@ -7,7 +7,10 @@
 [![BCH compliance](https://bettercodehub.com/edge/badge/AllenTom/YouCrawl?branch=master)](https://bettercodehub.com/)
 
 Simple web crawl
-
+## install
+```
+go get github.com/allentom/youcrawl
+```
 ## Feature
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
 ## Workflow
