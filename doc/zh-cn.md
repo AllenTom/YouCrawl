@@ -6,60 +6,57 @@
 [![codecov](https://codecov.io/gh/AllenTom/YouCrawl/branch/master/graph/badge.svg)](https://codecov.io/gh/AllenTom/YouCrawl)
 [![BCH compliance](https://bettercodehub.com/edge/badge/AllenTom/YouCrawl?branch=master)](https://bettercodehub.com/)
 
-[简体中文](doc/zh-cn.md) | [English](README.md)
+[简体中文](doc/zh-cn.md) | [English](../README.md)
 
-Simple web crawl
-## install
+使用Go语言实现的爬虫库
+## 安装
 ```
 go get github.com/allentom/youcrawl
 ```
-## Feature
+## 功能
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
-## Workflow
-![](./other/workflow.png)
+## Workflow 工作原理
+![](../other/workflow.png)
 
-yellow box will run parallel
-## Example
+黄色部分会并行的执行
+## 示例
 ```go
 
 func main() {
-    // new engine
+    // 创建一个engine
     e := youcrawl.NewEngine(&youcrawl.EngineOption{
-        // Up to three tasks can be executed concurrently
+        // 最大同时请求数
         MaxRequest: 3
     })
-    // use your custom middleware
+    // 使用自定义middleware
     var LogMiddleware = func(r *http.Request,ctx Context) {
 		fmt.Println(fmt.Sprintf("request : %s",r.URL.String()))
 	}
     e.UseMiddleware(LogMiddleware)
-    // add urls to crawl
+    // 添加爬虫的网址
     e.AddURLs("https://www.zhihu.com")
-    // add HTML parser
+    // HTML解析器
 	e.AddHTMLParser(func(doc *goquery.Document, ctx youcrawl.Context) {
-        // get document and your code
-        // go `goquery` doc to get more detail
+        // 详细的使用方法请参见 goquery
         title := doc.Find("title").Text()
         
         fmt.Println(fmt.Sprintf("%s [%d]",ctx.Request.URL.String(),ctx.Response.StatusCode))
         
 		fmt.Println(title)
     })
-    // make channel for wait
-    stopChannel := make(chan struct{})
-    // run crawler
-    e.Run(stopChannel)
-    // wait for it done
-	<-stopChannel
+    // 创建一个waitgroup等待完成
+    var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }
 ```
 ## Middleware
-There some pre-build middleware in YouCrawl
+YouCrawl提供了一些内置的中间件，中间件是在执行请求之前进行对请求参数进行编辑的组件。
 
 ### UserAgent
-The middleware will read `./ua.txt` in the directory, and each line represents a UA string.
+随机UserAgent的Middleware会随机从UA池中随机选取UA，将UA的列表保存在`ua.txt`中，每一行代表一个
 
-middleware will random pick a ua in request
 ```go
 func main() {
     ...
@@ -68,9 +65,8 @@ func main() {
 ```
 
 ### Proxy
-The middleware will read `./proxy.txt` in the directory, and each line represents a http proxy.
+随机代理会从`./proxy.txt`中读取列表并随机选择一个代理使用
 
-middleware will random pick a proxy in request
 ```go
 func main() {
     ...
@@ -79,10 +75,10 @@ func main() {
 ```
 
 ## Pipelines
-pipleline handle with item
+Pipeline是处理Item的组件
 
-### custom you pipeline
-just implement `youcrawl.Pipeline` interface
+### 自定义 Pipeline
+只需要实现`youcrawl.Pipeline`接口即可
 ```go
 type MyCustomPipeline struct {
 
@@ -93,21 +89,21 @@ func (g *MyCustomPipeline) Process(item *youcrawl.Item, store *youcrawl.GlobalSt
 	return nil
 }
 ```
-call `e.AddPipelines()`
+调用 `e.AddPipelines()`
 
-### GlobalStorePipeline
-global store will store data in engine scope,share to all tasks.
+### 存储Pipeline
+全局储存拥有与engine相同的生命周期，在使用的过程中，可以将数据储存在这里
 
-this pipeline will save `item` in global store with key of `items`
+这个Pipeline会保存item至全局存储中名为`items`的列表中
 ```go
 e.AddPipelines(&GlobalStorePipeline{})
 ```
 
-## Post-Process
-post-process run on all task are done,usually used to store the data in the database
+## Post-Process（后期处理）
+当所有的操作完成后，会执行后期处理，执行一些例如将Global Store中的数据一次性写入数据库，记录爬取状态记录
 
-### custom post-process
-just implement `youcrawl.PostProcess` interface.
+### 自定义 post-process
+实现`youcrawl.PostProcess`接口
 ```go
 type PrintGlobalStorePostProcess struct {}
 
@@ -117,9 +113,9 @@ func (p *PrintGlobalStorePostProcess) Process(store *youcrawl.GlobalStore) error
 	return nil
 }
 ```
-call ` e.AddPostProcess()` to add your custom post-process
+调用 ` e.AddPostProcess()` to add your custom post-process
 
 ### OutputJsonPostProcess
-write `GlobalStore["items"]` in to json file
+将 `GlobalStore["items"]`  中的Item写入json文件
 ## License
 [![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FAllenTom%2FYouCrawl.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FAllenTom%2FYouCrawl?ref=badge_large)
