@@ -2,7 +2,6 @@ package youcrawl
 
 import (
 	"fmt"
-	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
@@ -20,21 +19,12 @@ type Task struct {
 }
 
 // request task pool
-type RequestPool struct {
-	Tasks         []Task
-	Total         int
-	CompleteCount int
-	NextTask      *Task
-	GetTaskChan   chan *Task
-	DoneChan      chan struct{}
-	sync.Mutex
-}
 
 // youcrawl engine
 type Engine struct {
 	sync.Mutex
 	*EngineOption
-	Pool        *RequestPool
+	Pool        TaskPool
 	Parsers     []HTMLParser
 	Middlewares []Middleware
 	Pipelines   []Pipeline
@@ -77,70 +67,6 @@ func NewEngine(option *EngineOption) *Engine {
 	return newEngine
 }
 
-// add task to task pool
-func (p *RequestPool) AddURLs(urls ...string) {
-	EngineLogger.Info(fmt.Sprintf("append new url with len = %d", len(urls)))
-	p.Lock()
-	defer p.Unlock()
-	p.Total += len(urls)
-	for _, url := range urls {
-		p.Tasks = append(p.Tasks, Task{
-			ID:  xid.New().String(),
-			Url: url,
-			Context: Context{
-				content: map[string]interface{}{},
-				Item: Item{
-					Store: map[string]interface{}{},
-				},
-			},
-		})
-	}
-
-	// suspend task requirement exist,resume
-	// see also `RequestPool.GetOneTask` method
-	if p.GetTaskChan != nil {
-		resumeTask := p.GetUnRequestedTask()
-		if resumeTask != nil {
-			resumeTask.Context.Pool = p
-			p.GetTaskChan <- resumeTask
-			resumeTask.Requested = true
-			p.GetTaskChan = nil
-		}
-	}
-}
-
-func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
-	taskChan := make(chan *Task)
-	go func(callbackChan chan *Task) {
-		p.Lock()
-		defer p.Unlock()
-		unRequestedTask := p.GetUnRequestedTask()
-		if unRequestedTask != nil {
-			unRequestedTask.Context.Pool = p
-			unRequestedTask.Requested = true
-			unRequestedTask.Context.GlobalStore = &e.GlobalStore
-			callbackChan <- unRequestedTask
-			return
-		}
-		// no more request,suspend task
-		EngineLogger.Info("suspend get task ")
-		p.GetTaskChan = callbackChan
-	}(taskChan)
-	return taskChan
-}
-
-// find unreauested task
-func (p *RequestPool) GetUnRequestedTask() (target *Task) {
-	for idx := range p.Tasks {
-		iterTask := &p.Tasks[idx]
-		if !iterTask.Requested {
-			target = iterTask
-			return
-		}
-	}
-	return nil
-}
-
 // add url to crawl
 // unsafe operation,engine must not in running status
 //
@@ -172,31 +98,6 @@ func (e *Engine) UseMiddleware(middlewares ...Middleware) {
 // add postprocess
 func (e *Engine) AddPostProcess(postprocessList ...PostProcess) {
 	e.PostProcess = append(e.PostProcess, postprocessList...)
-}
-
-// get task from pool task
-func (p *RequestPool) OnTaskDone(task *Task) {
-	p.Lock()
-	defer p.Unlock()
-	// set true
-
-	for idx := range p.Tasks {
-		if task.ID == p.Tasks[idx].ID {
-			p.Tasks[idx].Completed = true
-		}
-	}
-
-	// check weather all task are complete
-	for idx := range p.Tasks {
-		if !p.Tasks[idx].Requested || !p.Tasks[idx].Completed {
-			return
-		}
-	}
-
-	// no new request
-	EngineLogger.Info("no more task to resume , go to done!")
-	p.DoneChan <- struct{}{}
-
 }
 
 func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
@@ -245,7 +146,7 @@ Loop:
 		case task := <-e.Pool.GetOneTask(e):
 
 			go CrawlProcess(taskChannel, e, task)
-		case <-e.Pool.DoneChan:
+		case <-e.Pool.GetDoneChan():
 			break Loop
 		}
 	}
