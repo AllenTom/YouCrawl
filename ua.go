@@ -32,7 +32,7 @@ func (p *UserAgentPool) GetUserAgent() string {
 	return pick
 }
 
-var UserAgentMiddleware Middleware = func(c *http.Client, r *http.Request, ctx Context) {
+var UserAgentMiddleware Middleware = func(c *http.Client, r *http.Request, ctx *Context) {
 	ua := UserAgents.GetUserAgent()
 	if len(ua) > 0 {
 		r.Header.Add("User-Agent", ua)

@@ -10,7 +10,13 @@ type OutputJsonPostProcess struct {
 }
 
 func (p *OutputJsonPostProcess) Process(store *GlobalStore) error {
-	file, _ := json.MarshalIndent(store.Content["items"], "", " ")
-	_ = ioutil.WriteFile(p.StorePath, file, 0644)
+	file, err := json.MarshalIndent(store.Content["items"], "", " ")
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(p.StorePath, file, 0644)
+	if err != nil {
+		return err
+	}
 	return nil
 }
