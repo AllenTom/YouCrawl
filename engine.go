@@ -24,12 +24,13 @@ type Task struct {
 type Engine struct {
 	sync.Mutex
 	*EngineOption
-	Pool        TaskPool
-	Parsers     []HTMLParser
-	Middlewares []Middleware
-	Pipelines   []Pipeline
-	GlobalStore GlobalStore
-	PostProcess []PostProcess
+	Pool          TaskPool
+	Parsers       []HTMLParser
+	Middlewares   []Middleware
+	Pipelines     []Pipeline
+	GlobalStore   GlobalStore
+	PostProcess   []PostProcess
+	InterruptChan chan struct{}
 }
 
 // share data in crawl process
@@ -40,7 +41,7 @@ type Context struct {
 	content     map[string]interface{}
 	Item        Item
 	GlobalStore GlobalStore
-	Pool        *RequestPool
+	Pool        TaskPool
 }
 
 // init engine config
@@ -57,14 +58,18 @@ func NewEngine(option *EngineOption) *Engine {
 	}
 	newEngine := &Engine{
 		Pool: &RequestPool{
-			Tasks:    []Task{},
-			DoneChan: make(chan struct{}),
+			Tasks:         []Task{},
+			DoneChan:      make(chan struct{}),
+			CloseFlag:     0,
+			Total:         0,
+			CompleteCount: 0,
 		},
-		EngineOption: option,
-		Pipelines:    []Pipeline{},
-		Middlewares:  []Middleware{},
-		Parsers:      []HTMLParser{},
-		GlobalStore:  &globalStore,
+		EngineOption:  option,
+		Pipelines:     []Pipeline{},
+		Middlewares:   []Middleware{},
+		Parsers:       []HTMLParser{},
+		GlobalStore:   &globalStore,
+		InterruptChan: make(chan struct{}),
 	}
 
 	return newEngine
@@ -142,6 +147,14 @@ func (e *Engine) Run(wg *sync.WaitGroup) {
 	for idx := 0; idx < e.MaxRequest; idx++ {
 		taskChannel <- struct{}{}
 	}
+
+	// run interrupt chan
+	go func() {
+		select {
+		case <-e.InterruptChan:
+			e.Pool.Close()
+		}
+	}()
 Loop:
 	for {
 		<-taskChannel

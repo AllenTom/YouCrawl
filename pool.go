@@ -12,6 +12,7 @@ type TaskPool interface {
 	GetUnRequestedTask() (target *Task)
 	OnTaskDone(task *Task)
 	GetDoneChan() chan struct{}
+	Close()
 }
 
 type RequestPool struct {
@@ -21,6 +22,8 @@ type RequestPool struct {
 	NextTask      *Task
 	GetTaskChan   chan *Task
 	DoneChan      chan struct{}
+	CloseFlag     int64
+	CompleteChan  chan *Task
 	sync.Mutex
 }
 
@@ -45,7 +48,7 @@ func (p *RequestPool) AddURLs(urls ...string) {
 
 	// suspend task requirement exist,resume
 	// see also `RequestPool.GetOneTask` method
-	if p.GetTaskChan != nil {
+	if p.GetTaskChan != nil && p.CloseFlag == 0 {
 		resumeTask := p.GetUnRequestedTask()
 		if resumeTask != nil {
 			resumeTask.Context.Pool = p
@@ -61,6 +64,9 @@ func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
 	go func(callbackChan chan *Task) {
 		p.Lock()
 		defer p.Unlock()
+		if p.CloseFlag == 1 {
+			return
+		}
 		unRequestedTask := p.GetUnRequestedTask()
 		if unRequestedTask != nil {
 			unRequestedTask.Context.Pool = p
@@ -93,7 +99,6 @@ func (p *RequestPool) OnTaskDone(task *Task) {
 	p.Lock()
 	defer p.Unlock()
 	// set true
-
 	for idx := range p.Tasks {
 		if task.ID == p.Tasks[idx].ID {
 			p.Tasks[idx].Completed = true
@@ -101,9 +106,11 @@ func (p *RequestPool) OnTaskDone(task *Task) {
 	}
 
 	// check weather all task are complete
-	for idx := range p.Tasks {
-		if !p.Tasks[idx].Requested || !p.Tasks[idx].Completed {
-			return
+	if p.CloseFlag == 0 {
+		for idx := range p.Tasks {
+			if !p.Tasks[idx].Requested || !p.Tasks[idx].Completed {
+				return
+			}
 		}
 	}
 
@@ -115,4 +122,10 @@ func (p *RequestPool) OnTaskDone(task *Task) {
 
 func (p *RequestPool) GetDoneChan() chan struct{} {
 	return p.DoneChan
+}
+
+func (p *RequestPool) Close() {
+	p.Lock()
+	defer p.Unlock()
+	p.CloseFlag = 1
 }
