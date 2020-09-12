@@ -30,7 +30,7 @@ func TestPostProcess(t *testing.T) {
 		ctx.Item.SetValue("title", title)
 		return nil
 	})
-	e.UseMiddleware(UserAgentMiddleware)
+	e.UseMiddleware(&UserAgentMiddleware{})
 	e.AddPipelines(&GlobalStorePipeline{})
 	e.AddPostProcess(&PrintGlobalStorePostProcess{})
 	var wg sync.WaitGroup

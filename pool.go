@@ -24,7 +24,25 @@ type RequestPool struct {
 	DoneChan      chan struct{}
 	CloseFlag     int64
 	CompleteChan  chan *Task
+	UseCookie     bool
+	Store         GlobalStore
 	sync.Mutex
+}
+type RequestPoolOption struct {
+	UseCookie bool
+}
+
+func NewRequestPool(option RequestPoolOption, store GlobalStore) *RequestPool {
+	pool := &RequestPool{
+		Tasks:         []Task{},
+		DoneChan:      make(chan struct{}),
+		CloseFlag:     0,
+		Total:         0,
+		CompleteCount: 0,
+		UseCookie:     option.UseCookie,
+		Store:         store,
+	}
+	return pool
 }
 
 // add task to task pool
@@ -51,14 +69,19 @@ func (p *RequestPool) AddURLs(urls ...string) {
 	if p.GetTaskChan != nil && p.CloseFlag == 0 {
 		resumeTask := p.GetUnRequestedTask()
 		if resumeTask != nil {
-			resumeTask.Context.Pool = p
-			p.GetTaskChan <- resumeTask
+			resumeTask = p.initTask(resumeTask)
 			resumeTask.Requested = true
+			p.GetTaskChan <- resumeTask
 			p.GetTaskChan = nil
 		}
 	}
 }
-
+func (p *RequestPool) initTask(task *Task) *Task {
+	task.Context.Pool = p
+	task.ID = xid.New().String()
+	task.Context.GlobalStore = p.Store
+	return task
+}
 func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
 	taskChan := make(chan *Task)
 	go func(callbackChan chan *Task) {
@@ -69,9 +92,8 @@ func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
 		}
 		unRequestedTask := p.GetUnRequestedTask()
 		if unRequestedTask != nil {
-			unRequestedTask.Context.Pool = p
+			unRequestedTask = p.initTask(unRequestedTask)
 			unRequestedTask.Requested = true
-			unRequestedTask.Context.GlobalStore = e.GlobalStore
 			callbackChan <- unRequestedTask
 			return
 		}

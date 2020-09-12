@@ -104,3 +104,20 @@ func TestAddTaskInRun(t *testing.T) {
 	e.Run(&wg)
 	wg.Wait()
 }
+
+func TestCookie(t *testing.T) {
+	e := NewEngine(&EngineOption{MaxRequest: 5})
+	e.AddURLs("http://www.bing.com", "http://www.yandex.com")
+	e.AddHTMLParser(DefaultTestParser)
+	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+		return nil
+	})
+	cookieMiddleware := NewCookieMiddleware(CookieMiddlewareOption{
+		GetKey: nil,
+	})
+	e.UseMiddleware(cookieMiddleware)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
+}

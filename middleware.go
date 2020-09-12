@@ -4,4 +4,7 @@ import (
 	"net/http"
 )
 
-type Middleware func(c *http.Client, r *http.Request, ctx *Context)
+type Middleware interface {
+	Process(c *http.Client, r *http.Request, ctx *Context)
+	RequestCallback(c *http.Client, r *http.Request, ctx *Context)
+}

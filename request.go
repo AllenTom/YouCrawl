@@ -13,8 +13,11 @@ func RequestWithURL(task *Task, middlewares ...Middleware) (io.Reader, error) {
 		return nil, err
 	}
 	client := &http.Client{}
+	if task.Context.Cookie != nil {
+		client.Jar = task.Context.Cookie
+	}
 	for _, middleware := range middlewares {
-		middleware(client, req, &task.Context)
+		middleware.Process(client, req, &task.Context)
 	}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -23,5 +26,9 @@ func RequestWithURL(task *Task, middlewares ...Middleware) (io.Reader, error) {
 	EngineLogger.Info(fmt.Sprintf("%s [%d]", task.Url, resp.StatusCode))
 	task.Context.Request = req
 	task.Context.Response = resp
+
+	for _, middleware := range middlewares {
+		middleware.RequestCallback(client, req, &task.Context)
+	}
 	return resp.Body, nil
 }

@@ -22,7 +22,7 @@ func TestEngine(t *testing.T) {
 		},
 	}
 	e.AddPipelines(itemLogPipeline)
-	e.UseMiddleware(UserAgentMiddleware)
+	e.UseMiddleware(&UserAgentMiddleware{})
 	var wg sync.WaitGroup
 	wg.Add(1)
 	e.Run(&wg)
@@ -37,7 +37,7 @@ func TestImageDownloadPipeline_Process(t *testing.T) {
 		},
 		MaxDownload: 2,
 		Middlewares: []Middleware{
-			UserAgentMiddleware,
+			&UserAgentMiddleware{},
 		},
 	}
 	err := downloadPipeline.Process(

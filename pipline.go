@@ -86,7 +86,7 @@ func (i *ImageDownloadPipeline) Process(item *Item, store GlobalStore) error {
 			client := &http.Client{}
 			if i.Middlewares != nil {
 				for _, middleware := range i.Middlewares {
-					middleware(client, req, &Context{})
+					middleware.Process(client, req, &Context{})
 				}
 			}
 

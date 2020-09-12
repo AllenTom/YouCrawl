@@ -49,7 +49,14 @@ func ReadProxyListFile() ([]string, error) {
 	return proxyList, nil
 }
 
-var ProxyMiddleware Middleware = func(c *http.Client, r *http.Request, ctx *Context) {
+type ProxyMiddleware struct {
+}
+
+func (p *ProxyMiddleware) RequestCallback(c *http.Client, r *http.Request, ctx *Context) {
+
+}
+
+func (p *ProxyMiddleware) Process(c *http.Client, r *http.Request, ctx *Context) {
 	proxyURL := ProxyList.GetProxy()
 	if len(proxyURL) > 0 {
 		url, err := url.Parse(proxyURL)

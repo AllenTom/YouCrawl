@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"net/http/cookiejar"
 	"sync"
 )
 
@@ -24,6 +25,7 @@ type Task struct {
 type Engine struct {
 	sync.Mutex
 	*EngineOption
+	// dispatch task
 	Pool          TaskPool
 	Parsers       []HTMLParser
 	Middlewares   []Middleware
@@ -42,33 +44,31 @@ type Context struct {
 	Item        Item
 	GlobalStore GlobalStore
 	Pool        TaskPool
+	Cookie      *cookiejar.Jar
 }
 
 // init engine config
 type EngineOption struct {
+	// max running in same time
 	MaxRequest int
 }
 
 // init new engine
 func NewEngine(option *EngineOption) *Engine {
-	globalStore := MemoryGlobalStore{}
+	globalStore := &MemoryGlobalStore{}
 	err := globalStore.Init()
 	if err != nil {
 		logrus.Fatal("init global store failed")
 	}
+	pool := NewRequestPool(RequestPoolOption{}, globalStore)
+
 	newEngine := &Engine{
-		Pool: &RequestPool{
-			Tasks:         []Task{},
-			DoneChan:      make(chan struct{}),
-			CloseFlag:     0,
-			Total:         0,
-			CompleteCount: 0,
-		},
+		Pool:          pool,
 		EngineOption:  option,
 		Pipelines:     []Pipeline{},
 		Middlewares:   []Middleware{},
 		Parsers:       []HTMLParser{},
-		GlobalStore:   &globalStore,
+		GlobalStore:   globalStore,
 		InterruptChan: make(chan struct{}),
 	}
 
@@ -160,7 +160,6 @@ Loop:
 		<-taskChannel
 		select {
 		case task := <-e.Pool.GetOneTask(e):
-
 			go CrawlProcess(taskChannel, e, task)
 		case <-e.Pool.GetDoneChan():
 			break Loop
