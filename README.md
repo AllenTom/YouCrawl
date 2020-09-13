@@ -18,7 +18,7 @@ go get github.com/allentom/youcrawl
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
 ## Workflow
 
-![](../other/workflow.png)
+![](./other/workflow.png)
 
 The yellow part will be executed in parallel
 
@@ -43,11 +43,11 @@ func main() {
 			MaxRequest: 5,
 		},
 	)
-	e.AddURLs("http://www.example.com")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
+    e.AddURLs("http://www.example.com")
+    var wg sync.WaitGroup
+    wg.Add(1)
+    e.Run(&wg)
+    wg.Wait()
 }
 ```
 
@@ -79,10 +79,10 @@ func main() {
 	e.AddPostProcess(&youcrawl.OutputJsonPostProcess{
 		StorePath: "./output.json",
 	})
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
+    var wg sync.WaitGroup
+    wg.Add(1)
+    e.Run(&wg)
+    wg.Wait()
 }
 ```
 

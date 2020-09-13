@@ -11,18 +11,16 @@ type GlobalStore interface {
 	GetValue(key string) interface{}
 }
 type MemoryGlobalStore struct {
-	sync.Mutex
+	sync.Map
 	Content map[string]interface{}
 }
 
 func (s *MemoryGlobalStore) SetValue(key string, value interface{}) {
-	s.Lock()
-	defer s.Unlock()
-	s.Content[key] = value
+	s.Store(key,value)
 }
 
 func (s *MemoryGlobalStore) GetValue(key string) interface{} {
-	target, exist := s.Content[key]
+	target, exist := s.Load(key)
 	if exist {
 		return target
 	} else {
@@ -30,10 +28,6 @@ func (s *MemoryGlobalStore) GetValue(key string) interface{} {
 	}
 }
 func (s *MemoryGlobalStore) Init() error {
-	s.Lock()
-	defer s.Unlock()
-
-	s.Content = map[string]interface{}{}
 	return nil
 }
 

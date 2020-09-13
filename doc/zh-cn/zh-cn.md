@@ -16,7 +16,7 @@ go get github.com/allentom/youcrawl
 ## 功能
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
 ## Workflow 工作原理
-![](../other/workflow.png)
+![](../../other/workflow.png)
 
 黄色部分会并行的执行
 
@@ -38,12 +38,12 @@ func main() {
 			// 最多同时进行5个任务
 			MaxRequest: 5,
 		},
-	)
-	e.AddURLs("http://www.example.com")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
+    )
+    e.AddURLs("http://www.example.com")
+    var wg sync.WaitGroup
+    wg.Add(1)
+    e.Run(&wg)
+    wg.Wait()
 }
 ```
 
