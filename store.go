@@ -18,7 +18,7 @@ type MemoryGlobalStore struct {
 func (s *MemoryGlobalStore) SetValue(key string, value interface{}) {
 	s.Lock()
 	defer s.Unlock()
-
+	s.Content[key] = value
 }
 
 func (s *MemoryGlobalStore) GetValue(key string) interface{} {
@@ -44,11 +44,13 @@ type GlobalStorePipeline struct {
 
 func (g *GlobalStorePipeline) Process(item *Item, store GlobalStore) error {
 	rawItems := store.GetValue("items")
-	if rawItems != nil {
-		items := rawItems.([]map[string]interface{})
-		items = append(items, item.Store)
-		store.SetValue("items", items)
+	if rawItems == nil {
+		rawItems = make([]map[string]interface{}, 0)
 	}
+
+	items := rawItems.([]map[string]interface{})
+	items = append(items, item.Store)
+	store.SetValue("items", items)
 
 	return nil
 }
