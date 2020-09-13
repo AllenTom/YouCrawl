@@ -1,6 +1,7 @@
 package youcrawl
 
 import (
+	"github.com/PuerkitoBio/goquery"
 	"testing"
 )
 
@@ -15,7 +16,11 @@ func TestParser(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = ParseHTML(reader, DefaultTestParser, &task.Context)
+	doc, err := goquery.NewDocumentFromReader(reader)
+	if err != nil {
+		EngineLogger.Error(err)
+	}
+	err = ParseHTML(doc, DefaultTestParser, &task.Context)
 	if err != nil {
 		t.Error(err)
 	}

@@ -45,7 +45,11 @@ func TestParseHTML(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	err = ParseHTML(bodyReader, func(doc *goquery.Document, ctx *Context) error {
+	doc, err := goquery.NewDocumentFromReader(bodyReader)
+	if err != nil {
+		EngineLogger.Error(err)
+	}
+	err = ParseHTML(doc, func(doc *goquery.Document, ctx *Context) error {
 		title := doc.Find("title").Text()
 		fmt.Println(title)
 		return nil

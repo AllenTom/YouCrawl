@@ -2,6 +2,7 @@ package youcrawl
 
 import (
 	"fmt"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/cookiejar"
@@ -118,11 +119,16 @@ func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
 	}
 	taskChannel <- struct{}{}
 	// parse html
+	doc, err := goquery.NewDocumentFromReader(requestBody)
+	if err != nil {
+		EngineLogger.Error(err)
+	}
 	// run parser one by one
+
 	for _, parser := range e.Parsers {
-		err = ParseHTML(requestBody, parser, &task.Context)
+		err = ParseHTML(doc, parser, &task.Context)
 		if err != nil {
-			fmt.Println(err)
+			EngineLogger.Error(err)
 			continue
 		}
 	}
@@ -130,7 +136,7 @@ func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
 	for _, pipeline := range e.Pipelines {
 		err := pipeline.Process(&task.Context.Item, e.GlobalStore)
 		if err != nil {
-			fmt.Println(err)
+			EngineLogger.Error(err)
 			continue
 		}
 	}
