@@ -8,6 +8,7 @@ import (
 
 type TaskPool interface {
 	AddURLs(urls ...string)
+	AddTasks(task ...*Task)
 	GetOneTask(e *Engine) <-chan *Task
 	GetUnRequestedTask() (target *Task)
 	OnTaskDone(task *Task)
@@ -43,6 +44,51 @@ func NewRequestPool(option RequestPoolOption, store GlobalStore) *RequestPool {
 		Store:         store,
 	}
 	return pool
+}
+
+func NewTask(url string, item map[string]interface{}) Task {
+	return Task{
+		ID:  xid.New().String(),
+		Url: url,
+		Context: Context{
+			content: map[string]interface{}{},
+			Item: Item{
+				Store: item,
+			},
+		},
+	}
+}
+
+// add task
+func (p *RequestPool) AddTasks(tasks ...*Task) {
+	EngineLogger.Info(fmt.Sprintf("append new url with len = %d", len(tasks)))
+	p.Lock()
+	defer p.Unlock()
+	p.Total += len(tasks)
+	for _, addTask := range tasks {
+		p.Tasks = append(p.Tasks, Task{
+			ID:  addTask.ID,
+			Url: addTask.Url,
+			Context: Context{
+				content: addTask.Context.content,
+				Item: Item{
+					Store: addTask.Context.Item.Store,
+				},
+			},
+		})
+	}
+
+	// suspend task requirement exist,resume
+	// see also `RequestPool.GetOneTask` method
+	if p.GetTaskChan != nil && p.CloseFlag == 0 {
+		resumeTask := p.GetUnRequestedTask()
+		if resumeTask != nil {
+			resumeTask = p.initTask(resumeTask)
+			resumeTask.Requested = true
+			p.GetTaskChan <- resumeTask
+			p.GetTaskChan = nil
+		}
+	}
 }
 
 // add task to task pool

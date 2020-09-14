@@ -125,3 +125,19 @@ func TestCookie(t *testing.T) {
 	e.Run(&wg)
 	wg.Wait()
 }
+
+func TestNewTask(t *testing.T) {
+	e := NewEngine(&EngineOption{MaxRequest: 5})
+	addTask := NewTask("http://www.bing.com", map[string]interface{}{
+		"webLabel": "bing",
+	})
+	e.AddTasks(&addTask)
+	e.AddHTMLParser(DefaultTestParser)
+	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+		return nil
+	})
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
+}

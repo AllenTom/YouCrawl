@@ -84,6 +84,14 @@ func (e *Engine) AddURLs(urls ...string) {
 	e.Pool.AddURLs(urls...)
 }
 
+// add task to crawl
+// unsafe operation,engine must not in running status
+//
+// in engine running ,use RequestPool.AddURLs method
+func (e *Engine) AddTasks(tasks ...*Task) {
+	e.Pool.AddTasks(tasks...)
+}
+
 // add parse
 func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 	for _, htmlParser := range parsers {
