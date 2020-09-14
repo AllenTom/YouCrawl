@@ -18,3 +18,25 @@ type OutputJsonPostProcess struct {
 	StorePath string
 }
 ```
+
+## OutputCSVPostProcess
+Output the `items` field in GlobalStore to the csv file
+```go
+type OutputCSVPostProcessOption struct {
+    // output path.
+    // if not provided,use `./output.csv` as default value
+    OutputPath string
+    // with header.
+    // default : false
+    WithHeader bool
+    // key to write
+    // if not provided,will write all key
+    Keys []string
+    // key to csv column name.
+    // if not provide,use key name as csv column name
+    KeysMapping map[string]string
+    // if value not exist in item.
+    // by default,use empty string
+    NotExistValue string
+}
+```

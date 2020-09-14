@@ -3,6 +3,7 @@ package youcrawl
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"os"
 	"sync"
 	"testing"
 )
@@ -37,4 +38,39 @@ func TestPostProcess(t *testing.T) {
 	wg.Add(1)
 	e.Run(&wg)
 	wg.Wait()
+}
+
+func TestOutputCSVPostProcess_Process(t *testing.T) {
+	store := &MemoryGlobalStore{
+		Content: map[string]interface{}{},
+	}
+	items := make([]map[string]interface{}, 0)
+	for idx := 0; idx < 10; idx++ {
+		item := make(map[string]interface{})
+		item["title"] = fmt.Sprintf("title %d", idx)
+		item["content"] = fmt.Sprintf("content %d", idx)
+		item["ignore"] = fmt.Sprintf("ignore %d", idx)
+		if idx%2 == 0 {
+			item["exist"] = true
+		}
+		items = append(items, item)
+	}
+	store.SetValue("items", items)
+	postprocess := NewOutputCSVPostProcess(OutputCSVPostProcessOption{
+		OutputPath: "./output.csv",
+		WithHeader: true,
+		Keys:       []string{"title", "content", "exist"},
+		KeysMapping: map[string]string{
+			"title": "webTitle",
+			"exist": "webExist",
+		},
+		NotExistValue: "Undefined",
+	})
+
+	defer os.Remove("./output.csv")
+	err := postprocess.Process(store)
+	if err != nil {
+		t.Error(err)
+	}
+
 }
