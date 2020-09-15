@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"sync"
-	"sync/atomic"
 	"testing"
 )
 
@@ -84,23 +83,6 @@ func (i *ItemLogPipeline) Process(item interface{}, _ GlobalStore) error {
 func TestWebNotReach(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 3})
 	e.AddURLs("http://www.eeeeeeeeeeeeexaaaaaaaaaaaaaaample.com")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
-}
-
-func TestAddTaskInRun(t *testing.T) {
-	var hasAdd int64 = 0
-	e := NewEngine(&EngineOption{MaxRequest: 5})
-	e.AddURLs("http://www.example.com")
-	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
-		if hasAdd == 0 {
-			ctx.Pool.AddURLs("http://www.example.com")
-			atomic.AddInt64(&hasAdd, 1)
-		}
-		return nil
-	})
 	var wg sync.WaitGroup
 	wg.Add(1)
 	e.Run(&wg)
