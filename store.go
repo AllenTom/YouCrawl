@@ -42,14 +42,14 @@ func (s *MemoryGlobalStore) Init() error {
 type GlobalStorePipeline struct {
 }
 
-func (g *GlobalStorePipeline) Process(item *Item, store GlobalStore) error {
+func (g *GlobalStorePipeline) Process(item interface{}, store GlobalStore) error {
 	rawItems := store.GetValue("items")
 	if rawItems == nil {
-		rawItems = make([]map[string]interface{}, 0)
+		rawItems = make([]interface{}, 0)
 	}
 
-	items := rawItems.([]map[string]interface{})
-	items = append(items, item.Store)
+	items := rawItems.([]interface{})
+	items = append(items, item)
 	store.SetValue("items", items)
 	return nil
 }

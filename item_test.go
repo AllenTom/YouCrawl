@@ -1,11 +1,15 @@
 package youcrawl
 
-import "testing"
+import (
+	"github.com/PuerkitoBio/goquery"
+	"os"
+	"testing"
+)
 
-var TestItem Item
+var TestItem DefaultItem
 
 func init() {
-	TestItem = Item{Store: map[string]interface{}{}}
+	TestItem = DefaultItem{Store: map[string]interface{}{}}
 }
 func TestItem_SetValue(t *testing.T) {
 	TestItem.SetValue("test1", "test")
@@ -68,4 +72,31 @@ func TestItem_GetFloat64(t *testing.T) {
 		t.Error("must cause type error")
 	}
 
+}
+
+type WebItems struct {
+	Label string
+}
+type WebInfoItem struct {
+	Title  string     `json:",omitempty"`
+	Items  []WebItems `json:",omitempty"`
+	Status string     `json:",omitempty"`
+	URL    string     `json:",omitempty"`
+}
+
+func TestItemStruct(t *testing.T) {
+	e := NewEngine(&EngineOption{MaxRequest: 5})
+	addTask := NewTask("http://www.bing.com", WebInfoItem{})
+	e.AddTasks(&addTask)
+	e.AddHTMLParser(DefaultTestParser)
+	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+		item := ctx.Item.(WebInfoItem)
+		item.Title = doc.Find("title").Text()
+		ctx.Item = item
+		return nil
+	})
+	e.AddPipelines(&GlobalStorePipeline{})
+	e.AddPostProcess(&OutputJsonPostProcess{StorePath: "./output.json"})
+	e.RunAndWait()
+	defer os.Remove("./output.json")
 }

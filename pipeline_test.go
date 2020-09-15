@@ -11,8 +11,10 @@ func TestEngine(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 2})
 	e.AddURLs("https://www.example.com")
 	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+		item := ctx.Item.(DefaultItem)
 		title := doc.Find("title").Text()
-		ctx.Item.SetValue("title", title)
+		item.SetValue("title", title)
+
 		return nil
 	})
 	itemLogPipeline := &ItemLogPipeline{
@@ -32,7 +34,7 @@ func TestEngine(t *testing.T) {
 func TestImageDownloadPipeline_Process(t *testing.T) {
 	gb := MemoryGlobalStore{}
 	downloadPipeline := ImageDownloadPipeline{
-		GetStoreFileFolder: func(item *Item, store GlobalStore) string {
+		GetStoreFileFolder: func(item interface{}, store GlobalStore) string {
 			return "./download/crawl"
 		},
 		MaxDownload: 2,
@@ -41,12 +43,8 @@ func TestImageDownloadPipeline_Process(t *testing.T) {
 		},
 	}
 	err := downloadPipeline.Process(
-		&Item{
-			Store: map[string]interface{}{
-				"downloadImgURLs": []string{
-					"https://github.com/AllenTom/YouCrawl/raw/master/other/workflow.png",
-				},
-			},
+		ImageDownloadItem{
+			Urls: []string{"https://github.com/AllenTom/YouCrawl/raw/master/other/workflow.png"},
 		},
 		&gb,
 	)

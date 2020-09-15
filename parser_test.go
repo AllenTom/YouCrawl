@@ -7,10 +7,8 @@ import (
 
 func TestParser(t *testing.T) {
 	task := &Task{
-		Url: "http://www.example.com",
-		Context: Context{
-			content: map[string]interface{}{},
-		},
+		Url:     "http://www.example.com",
+		Context: Context{},
 	}
 	reader, err := RequestWithURL(task)
 	if err != nil {

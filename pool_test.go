@@ -14,8 +14,9 @@ func TestRequestPool_Close(t *testing.T) {
 	urls := []string{"https://example.com", "https://example.com", "https://example.com"}
 	e.AddURLs(urls...)
 	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+		item := ctx.Item.(DefaultItem)
 		title := doc.Find("title").Text()
-		ctx.Item.SetValue("title", title)
+		item.SetValue("title", title)
 		<-time.After(3 * time.Second)
 		return nil
 	})

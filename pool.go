@@ -46,15 +46,12 @@ func NewRequestPool(option RequestPoolOption, store GlobalStore) *RequestPool {
 	return pool
 }
 
-func NewTask(url string, item map[string]interface{}) Task {
+func NewTask(url string, item interface{}) Task {
 	return Task{
 		ID:  xid.New().String(),
 		Url: url,
 		Context: Context{
-			content: map[string]interface{}{},
-			Item: Item{
-				Store: item,
-			},
+			Item: item,
 		},
 	}
 }
@@ -66,14 +63,17 @@ func (p *RequestPool) AddTasks(tasks ...*Task) {
 	defer p.Unlock()
 	p.Total += len(tasks)
 	for _, addTask := range tasks {
+		item := addTask.Context.Item
+		if item == nil {
+			item = DefaultItem{
+				Store: map[string]interface{}{},
+			}
+		}
 		p.Tasks = append(p.Tasks, Task{
 			ID:  addTask.ID,
 			Url: addTask.Url,
 			Context: Context{
-				content: addTask.Context.content,
-				Item: Item{
-					Store: addTask.Context.Item.Store,
-				},
+				Item: addTask.Context.Item,
 			},
 		})
 	}
@@ -102,8 +102,7 @@ func (p *RequestPool) AddURLs(urls ...string) {
 			ID:  xid.New().String(),
 			Url: url,
 			Context: Context{
-				content: map[string]interface{}{},
-				Item: Item{
+				Item: DefaultItem{
 					Store: map[string]interface{}{},
 				},
 			},

@@ -53,7 +53,7 @@ func TestParseHTML(t *testing.T) {
 		title := doc.Find("title").Text()
 		fmt.Println(title)
 		return nil
-	}, &Context{content: map[string]interface{}{}})
+	}, &Context{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -68,13 +68,11 @@ type ItemLogPipeline struct {
 	Options ItemLogPipelineOption
 }
 
-func (i *ItemLogPipeline) Process(item *Item, _ GlobalStore) error {
+func (i *ItemLogPipeline) Process(item interface{}, _ GlobalStore) error {
 	if i.Options.PrintTitle {
-		title, err := item.GetString("title")
-		if err != nil {
-			return err
-		}
-		fmt.Println("=====================   " + title + "   =====================")
+		item := item.(DefaultItem)
+		title, _ := item.GetValue("title")
+		fmt.Println("=====================   " + title.(string) + "   =====================")
 	}
 	if i.Options.PrintDivider {
 		fmt.Println("==============================================================")

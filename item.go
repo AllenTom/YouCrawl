@@ -7,11 +7,11 @@ var (
 	TypeError          = errors.New("error type of item value")
 )
 
-type Item struct {
+type DefaultItem struct {
 	Store map[string]interface{}
 }
 
-func (i *Item) GetValue(key string) (interface{}, error) {
+func (i *DefaultItem) GetValue(key string) (interface{}, error) {
 	value, isExist := i.Store[key]
 	if !isExist {
 		return "", KeyNotContainError
@@ -19,11 +19,11 @@ func (i *Item) GetValue(key string) (interface{}, error) {
 	return value, nil
 }
 
-func (i *Item) SetValue(key string, value interface{}) {
+func (i *DefaultItem) SetValue(key string, value interface{}) {
 	i.Store[key] = value
 }
 
-func (i *Item) GetString(key string) (string, error) {
+func (i *DefaultItem) GetString(key string) (string, error) {
 	rawValue, err := i.GetValue(key)
 	if err != nil {
 		return "", err
@@ -35,7 +35,7 @@ func (i *Item) GetString(key string) (string, error) {
 	return value, nil
 }
 
-func (i *Item) GetInt(key string) (int, error) {
+func (i *DefaultItem) GetInt(key string) (int, error) {
 	rawValue, err := i.GetValue(key)
 	if err != nil {
 		return 0, err
@@ -47,7 +47,7 @@ func (i *Item) GetInt(key string) (int, error) {
 	return value, nil
 }
 
-func (i *Item) GetFloat64(key string) (float64, error) {
+func (i *DefaultItem) GetFloat64(key string) (float64, error) {
 	rawValue, err := i.GetValue(key)
 	if err != nil {
 		return 0, err

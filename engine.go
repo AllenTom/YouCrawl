@@ -41,8 +41,7 @@ type Context struct {
 	sync.Mutex
 	Request     *http.Request
 	Response    *http.Response
-	content     map[string]interface{}
-	Item        Item
+	Item        interface{}
 	GlobalStore GlobalStore
 	Pool        TaskPool
 	Cookie      *cookiejar.Jar
@@ -142,13 +141,21 @@ func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
 	}
 
 	for _, pipeline := range e.Pipelines {
-		err := pipeline.Process(&task.Context.Item, e.GlobalStore)
+		err := pipeline.Process(task.Context.Item, e.GlobalStore)
 		if err != nil {
 			EngineLogger.Error(err)
 			continue
 		}
 	}
 
+}
+
+// run and wait it done
+func (e *Engine) RunAndWait() {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	e.Run(&wg)
+	wg.Wait()
 }
 
 // run crawl engine

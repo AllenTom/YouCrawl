@@ -15,7 +15,7 @@ func (p *PrintGlobalStorePostProcess) Process(store GlobalStore) error {
 
 	rawItems := store.GetValue("items")
 	if rawItems != nil {
-		items := rawItems.([]map[string]interface{})
+		items := rawItems.([]interface{})
 		fmt.Println(fmt.Sprintf("total crawl %d items", len(items)))
 
 	}
@@ -27,8 +27,9 @@ func TestPostProcess(t *testing.T) {
 	urls := []string{"https://example.com", "https://example.com", "https://example.com"}
 	e.AddURLs(urls...)
 	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+		item := ctx.Item.(DefaultItem)
 		title := doc.Find("title").Text()
-		ctx.Item.SetValue("title", title)
+		item.SetValue("title", title)
 		return nil
 	})
 	e.UseMiddleware(&UserAgentMiddleware{})
