@@ -41,11 +41,12 @@ func TestImageDownloadPipeline_Process(t *testing.T) {
 		Middlewares: []Middleware{
 			&UserAgentMiddleware{},
 		},
+		GetUrls: func(item interface{}, store GlobalStore) []string {
+			return []string{"https://golang.google.cn/lib/godoc/images/home-gopher.png"}
+		},
 	}
 	err := downloadPipeline.Process(
-		ImageDownloadItem{
-			Urls: []string{"https://github.com/AllenTom/YouCrawl/raw/master/other/workflow.png"},
-		},
+		DefaultItem{},
 		&gb,
 	)
 	if err != nil {

@@ -21,6 +21,7 @@ type ImageDownloadItem struct {
 type ImageDownloadPipeline struct {
 	GetStoreFileFolder func(item interface{}, store GlobalStore) string
 	GetSaveFileName    func(item interface{}, store GlobalStore, rawURL string) string
+	GetUrls            func(item interface{}, store GlobalStore) []string
 	MaxDownload        int
 	Middlewares        []Middleware
 }
@@ -28,9 +29,17 @@ type ImageDownloadPipeline struct {
 func (i *ImageDownloadPipeline) Process(item interface{}, store GlobalStore) error {
 	logger := logrus.WithField("scope", "Image Download Pipeline")
 	// prepare
-	rawDownloadURLs := item.(ImageDownloadItem)
+	rawDownloadURLs, ok := item.(ImageDownloadItem)
 
-	urls := rawDownloadURLs.Urls
+	// not download image item,use pipeline get url method
+	var urls []string
+	if !ok {
+		if i.GetUrls != nil {
+			urls = i.GetUrls(item, store)
+		}
+	} else {
+		urls = rawDownloadURLs.Urls
+	}
 
 	maxDownload := i.MaxDownload
 
