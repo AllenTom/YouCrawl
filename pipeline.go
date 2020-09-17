@@ -19,11 +19,26 @@ type ImageDownloadItem struct {
 	Urls []string
 }
 type ImageDownloadPipeline struct {
+	// get store folder
+	//
+	//./download/image by default
 	GetStoreFileFolder func(item interface{}, store GlobalStore) string
-	GetSaveFileName    func(item interface{}, store GlobalStore, rawURL string) string
-	GetUrls            func(item interface{}, store GlobalStore) []string
-	MaxDownload        int
-	Middlewares        []Middleware
+	// get save filename
+	//
+	// same name with image,by default
+	GetSaveFileName func(item interface{}, store GlobalStore, rawURL string) string
+	// get urls
+	//
+	//if the type of Item is ImageDownloadItem, no need to specify
+	GetUrls func(item interface{}, store GlobalStore) []string
+	// maximum number of concurrent downloads
+	MaxDownload int
+	// request middlewares to use
+	Middlewares []Middleware
+	// call on each image downloaded complete
+	OnImageDownloadComplete func(item interface{}, store GlobalStore, url string, downloadFilePath string)
+	// call on all image download, regardless of whether all image download is successful
+	OnDone func(item interface{}, store GlobalStore)
 }
 
 func (i *ImageDownloadPipeline) Process(item interface{}, store GlobalStore) error {
@@ -79,6 +94,9 @@ func (i *ImageDownloadPipeline) Process(item interface{}, store GlobalStore) err
 
 		go func(workChan chan struct{}, wg *sync.WaitGroup, saveFilePath string, downloadURL string, idx int) {
 			defer func() {
+				if i.OnImageDownloadComplete != nil {
+					i.OnImageDownloadComplete(item, store, downloadURL, saveFilePath)
+				}
 				workChan <- struct{}{}
 				wg.Done()
 			}()
@@ -125,5 +143,8 @@ func (i *ImageDownloadPipeline) Process(item interface{}, store GlobalStore) err
 	}
 
 	wg.Wait()
+	if i.OnDone != nil {
+		i.OnDone(item, store)
+	}
 	return nil
 }

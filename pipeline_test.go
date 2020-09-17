@@ -1,6 +1,7 @@
 package youcrawl
 
 import (
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"os"
 	"sync"
@@ -43,6 +44,16 @@ func TestImageDownloadPipeline_Process(t *testing.T) {
 		},
 		GetUrls: func(item interface{}, store GlobalStore) []string {
 			return []string{"https://golang.google.cn/lib/godoc/images/home-gopher.png"}
+		},
+		GetSaveFileName: func(item interface{}, store GlobalStore, rawURL string) string {
+			return "downloadImage.png"
+		},
+		OnImageDownloadComplete: func(item interface{}, store GlobalStore, url string, downloadFilePath string) {
+			fmt.Println(url)
+			fmt.Println(downloadFilePath)
+		},
+		OnDone: func(item interface{}, store GlobalStore) {
+			fmt.Println("all image downloaded")
 		},
 	}
 	err := downloadPipeline.Process(
