@@ -7,7 +7,8 @@ import (
 	"testing"
 )
 
-var DefaultTestParser HTMLParser = func(doc *goquery.Document, ctx *Context) error {
+var DefaultTestParser HTMLParser = func(ctx *Context) error {
+	doc := ctx.Doc
 	title := doc.Find("title").Text()
 	//fmt.Println(fmt.Sprintf("%s [%d]", ctx.Request.URL.String(), ctx.Response.StatusCode))
 	fmt.Println(ctx.Request.Header.Get("User-Agent"))
@@ -48,7 +49,7 @@ func TestParseHTML(t *testing.T) {
 	if err != nil {
 		EngineLogger.Error(err)
 	}
-	err = ParseHTML(doc, func(doc *goquery.Document, ctx *Context) error {
+	err = ParseHTML(func(ctx *Context) error {
 		title := doc.Find("title").Text()
 		fmt.Println(title)
 		return nil
@@ -79,23 +80,10 @@ func (i *ItemLogPipeline) Process(item interface{}, _ GlobalStore) error {
 	return nil
 }
 
-//http://www.eeeeeeeeeeeeexaaaaaaaaaaaaaaample.com/
-func TestWebNotReach(t *testing.T) {
-	e := NewEngine(&EngineOption{MaxRequest: 3})
-	e.AddURLs("http://www.eeeeeeeeeeeeexaaaaaaaaaaaaaaample.com")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
-}
-
 func TestCookie(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 5})
 	e.AddURLs("http://www.bing.com", "http://www.yandex.com")
 	e.AddHTMLParser(DefaultTestParser)
-	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
-		return nil
-	})
 	cookieMiddleware := NewCookieMiddleware(CookieMiddlewareOption{
 		GetKey: nil,
 	})
@@ -113,9 +101,6 @@ func TestNewTask(t *testing.T) {
 	})
 	e.AddTasks(&addTask)
 	e.AddHTMLParser(DefaultTestParser)
-	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
-		return nil
-	})
 	var wg sync.WaitGroup
 	wg.Add(1)
 	e.Run(&wg)

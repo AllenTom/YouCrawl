@@ -19,7 +19,8 @@ func TestParser(t *testing.T) {
 	if err != nil {
 		EngineLogger.Error(err)
 	}
-	err = ParseHTML(doc, DefaultTestParser, &task.Context)
+	task.Context.Doc = doc
+	err = ParseHTML(DefaultTestParser, &task.Context)
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,7 +31,7 @@ func TestParserOnError(t *testing.T) {
 		Url:     "https://api.github.com/",
 		Context: Context{},
 	}
-	err := ParseHTML(nil, func(doc *goquery.Document, ctx *Context) error {
+	err := ParseHTML(func(ctx *Context) error {
 		return errors.New("test error")
 	}, &task.Context)
 	if err == nil {

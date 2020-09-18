@@ -1,7 +1,6 @@
 package youcrawl
 
 import (
-	"github.com/PuerkitoBio/goquery"
 	"os"
 	"testing"
 )
@@ -89,8 +88,9 @@ func TestItemStruct(t *testing.T) {
 	addTask := NewTask("http://www.bing.com", WebInfoItem{})
 	e.AddTasks(&addTask)
 	e.AddHTMLParser(DefaultTestParser)
-	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+	e.AddHTMLParser(func(ctx *Context) error {
 		item := ctx.Item.(WebInfoItem)
+		doc := ctx.Doc
 		item.Title = doc.Find("title").Text()
 		ctx.Item = item
 		return nil

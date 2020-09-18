@@ -38,13 +38,13 @@ type Engine struct {
 
 // share data in crawl process
 type Context struct {
-	sync.Mutex
 	Request     *http.Request
 	Response    *http.Response
 	Item        interface{}
 	GlobalStore GlobalStore
 	Pool        TaskPool
 	Cookie      *cookiejar.Jar
+	Doc         *goquery.Document
 }
 
 // init engine config
@@ -131,9 +131,9 @@ func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
 		EngineLogger.Error(err)
 	}
 	// run parser one by one
-
+	task.Context.Doc = doc
 	for _, parser := range e.Parsers {
-		err = ParseHTML(doc, parser, &task.Context)
+		err = ParseHTML(parser, &task.Context)
 		if err != nil {
 			EngineLogger.Error(err)
 			continue

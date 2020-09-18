@@ -2,7 +2,6 @@ package youcrawl
 
 import (
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	"os"
 	"sync"
 	"testing"
@@ -11,8 +10,9 @@ import (
 func TestEngine(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 2})
 	e.AddURLs("https://www.example.com")
-	e.AddHTMLParser(func(doc *goquery.Document, ctx *Context) error {
+	e.AddHTMLParser(func(ctx *Context) error {
 		item := ctx.Item.(DefaultItem)
+		doc := ctx.Doc
 		title := doc.Find("title").Text()
 		item.SetValue("title", title)
 
