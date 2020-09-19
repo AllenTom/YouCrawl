@@ -12,13 +12,20 @@ func TestReadUserAgentListFile(t *testing.T) {
 	}
 }
 func TestUserAgentPool_GetUserAgent(t *testing.T) {
+	middleware, err := NewUserAgentMiddleware(UserAgentMiddlewareOption{
+		UserAgentList: []string{
+			"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	var wg sync.WaitGroup
 	for idx := 0; idx < 10; idx++ {
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
-			UserAgents.GetUserAgent()
-
+			middleware.GetUserAgent()
 		}(&wg)
 	}
 	wg.Wait()
@@ -26,10 +33,18 @@ func TestUserAgentPool_GetUserAgent(t *testing.T) {
 }
 
 func TestEngine_UseUAMiddleware(t *testing.T) {
+	middleware, err := NewUserAgentMiddleware(UserAgentMiddlewareOption{
+		UserAgentList: []string{
+			"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.130 Safari/537.36",
+		},
+	})
+	if err != nil {
+		t.Error(err)
+	}
 	e := NewEngine(&EngineOption{MaxRequest: 3})
-	e.AddURLs("https://www.example.com", "https://www.example.com", "https://www.example.com")
+	e.AddURLs("https://www.example.com")
 	e.AddHTMLParser(DefaultTestParser)
-	e.UseMiddleware(&UserAgentMiddleware{})
+	e.UseMiddleware(middleware)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	e.Run(&wg)
