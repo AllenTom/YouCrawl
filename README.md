@@ -43,11 +43,8 @@ func main() {
 			MaxRequest: 5,
 		},
 	)
-    e.AddURLs("http://www.example.com")
-    var wg sync.WaitGroup
-    wg.Add(1)
-    e.Run(&wg)
-    wg.Wait()
+  e.AddURLs("http://www.example.com")
+  e.RunAndWait()
 }
 ```
 
@@ -79,10 +76,7 @@ func main() {
 	e.AddPostProcess(&youcrawl.OutputJsonPostProcess{
 		StorePath: "./output.json",
 	})
-    var wg sync.WaitGroup
-    wg.Add(1)
-    e.Run(&wg)
-    wg.Wait()
+  e.RunAndWait()
 }
 ```
 
