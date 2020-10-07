@@ -12,7 +12,7 @@ Go crawl library
 
 ## Install
 ```
-go get github.com/allentom/youcrawl
+go get -u github.com/allentom/youcrawl
 ```
 ## Features
 HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
