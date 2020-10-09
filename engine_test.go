@@ -5,16 +5,18 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"sync"
 	"testing"
+	"time"
 )
 
 var DefaultTestParser HTMLParser = func(ctx *Context) error {
 	doc := ctx.Doc
 	title := doc.Find("title").Text()
 	//fmt.Println(fmt.Sprintf("%s [%d]", ctx.Request.URL.String(), ctx.Response.StatusCode))
-	fmt.Println(ctx.Request.Header.Get("User-Agent"))
 	fmt.Println(title)
 	return nil
 }
+
+
 
 func TestRequestWithURL(t *testing.T) {
 	_, err := RequestWithURL(&Task{
@@ -104,5 +106,25 @@ func TestNewTask(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	e.Run(&wg)
+	wg.Wait()
+}
+
+func TestRunWithDaemon(t *testing.T) {
+	e := NewEngine(&EngineOption{
+		MaxRequest: 3,
+		Daemon:     true,
+	})
+	e.AddHTMLParser(DefaultTestParser)
+	e.AddPostProcess()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		e.Run(wg)
+	}(&wg)
+
+	<- time.After(1 * time.Second)
+	e.Pool.AddURLs("http://www.example.com")
+	e.StopPoolChan <- struct{}{}
 	wg.Wait()
 }

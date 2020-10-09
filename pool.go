@@ -14,6 +14,7 @@ type TaskPool interface {
 	OnTaskDone(task *Task)
 	GetDoneChan() chan struct{}
 	Close()
+	SetPrevent(isPrevent bool)
 }
 
 type RequestPool struct {
@@ -25,12 +26,32 @@ type RequestPool struct {
 	DoneChan      chan struct{}
 	CloseFlag     int64
 	CompleteChan  chan *Task
-	UseCookie     bool
+	PreventStop   bool
 	Store         GlobalStore
 	sync.Mutex
 }
+
+func (p *RequestPool) SetPrevent(isPrevent bool) {
+	p.Lock()
+	defer p.Unlock()
+	p.PreventStop = isPrevent
+
+	if !isPrevent {
+		for idx := range p.Tasks {
+			if !p.Tasks[idx].Requested || !p.Tasks[idx].Completed {
+				// not done task exist, not kill
+				return
+			}
+		}
+		EngineLogger.Info("no more task to resume , go to done!")
+		p.DoneChan <- struct{}{}
+	}
+
+}
+
 type RequestPoolOption struct {
-	UseCookie bool
+	UseCookie   bool
+	PreventStop bool
 }
 
 func NewRequestPool(option RequestPoolOption, store GlobalStore) *RequestPool {
@@ -40,8 +61,8 @@ func NewRequestPool(option RequestPoolOption, store GlobalStore) *RequestPool {
 		CloseFlag:     0,
 		Total:         0,
 		CompleteCount: 0,
-		UseCookie:     option.UseCookie,
 		Store:         store,
+		PreventStop:   option.PreventStop,
 	}
 	return pool
 }
@@ -142,9 +163,11 @@ func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
 			callbackChan <- unRequestedTask
 			return
 		}
+
 		// no more request,suspend task
 		EngineLogger.Info("suspend get task ")
 		p.GetTaskChan = callbackChan
+
 	}(taskChan)
 	return taskChan
 }
@@ -182,9 +205,10 @@ func (p *RequestPool) OnTaskDone(task *Task) {
 	}
 
 	// no new request
-	EngineLogger.Info("no more task to resume , go to done!")
-	p.DoneChan <- struct{}{}
-
+	if !p.PreventStop {
+		EngineLogger.Info("no more task to resume , go to done!")
+		p.DoneChan <- struct{}{}
+	}
 }
 
 func (p *RequestPool) GetDoneChan() chan struct{} {

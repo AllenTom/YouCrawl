@@ -22,7 +22,6 @@ func TestUserAgentPool_GetUserAgent(t *testing.T) {
 		}(&wg)
 	}
 	wg.Wait()
-
 }
 
 func TestEngine_UseUAMiddleware(t *testing.T) {

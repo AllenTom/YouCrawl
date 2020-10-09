@@ -33,7 +33,10 @@ type Engine struct {
 	Pipelines     []Pipeline
 	GlobalStore   GlobalStore
 	PostProcess   []PostProcess
+	// receive signal: force stop pool
 	InterruptChan chan struct{}
+	// receive signal: stop pool when all task has done
+	StopPoolChan  chan struct{}
 }
 
 // share data in crawl process
@@ -51,6 +54,10 @@ type Context struct {
 type EngineOption struct {
 	// max running in same time
 	MaxRequest int
+
+	// true for:
+	// keep running until manually stopped
+	Daemon bool
 }
 
 // init new engine
@@ -60,7 +67,9 @@ func NewEngine(option *EngineOption) *Engine {
 	if err != nil {
 		logrus.Fatal("init global store failed")
 	}
-	pool := NewRequestPool(RequestPoolOption{}, globalStore)
+	pool := NewRequestPool(RequestPoolOption{
+		PreventStop: option.Daemon,
+	}, globalStore)
 
 	newEngine := &Engine{
 		Pool:          pool,
@@ -70,8 +79,8 @@ func NewEngine(option *EngineOption) *Engine {
 		Parsers:       []HTMLParser{},
 		GlobalStore:   globalStore,
 		InterruptChan: make(chan struct{}),
+		StopPoolChan:  make(chan struct{}),
 	}
-
 	return newEngine
 }
 
@@ -174,7 +183,10 @@ func (e *Engine) Run(wg *sync.WaitGroup) {
 		select {
 		case <-e.InterruptChan:
 			e.Pool.Close()
+		case <-e.StopPoolChan:
+			e.Pool.SetPrevent(false)
 		}
+
 	}()
 Loop:
 	for {
