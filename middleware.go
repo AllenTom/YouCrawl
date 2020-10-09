@@ -88,3 +88,63 @@ func (p *ProxyMiddleware) GetProxy() string {
 
 	return pick
 }
+
+type UserAgentMiddleware struct {
+	List []string
+}
+
+type UserAgentMiddlewareOption struct {
+	// set user agent list,
+	// if both UserAgentList and UserAgentFilePath are provided,combine tow list
+	UserAgentList []string
+	// read useragent from file,use `./ua.txt` by default,
+	// if both UserAgentList and UserAgentFilePath are provided,combine tow list
+	UserAgentFilePath string
+}
+
+func NewUserAgentMiddleware(option UserAgentMiddlewareOption) (*UserAgentMiddleware, error) {
+	UserAgentList := option.UserAgentList
+	if UserAgentList == nil {
+		UserAgentList = make([]string, 0)
+	}
+
+	list, err := readUserAgentListFile(option.UserAgentFilePath)
+	if err != nil {
+		return nil, err
+	}
+	UserAgentList = append(UserAgentList, list...)
+	middleware := &UserAgentMiddleware{List: UserAgentList}
+	return middleware, nil
+}
+
+func readUserAgentListFile(UserAgentPath string) ([]string, error) {
+	if len(UserAgentPath) == 0 {
+		UserAgentPath = "./ua.txt"
+	}
+	rawList, err := ReadListFile(UserAgentPath)
+	if err != nil {
+		return nil, err
+	}
+	return rawList, nil
+}
+
+func (p *UserAgentMiddleware) RequestCallback(c *http.Client, r *http.Request, ctx *Context) {
+
+}
+
+func (p *UserAgentMiddleware) Process(c *http.Client, r *http.Request, ctx *Context) {
+	uaString := p.GetUserAgent()
+	if len(uaString) > 0 {
+		r.Header.Add("User-Agent", uaString)
+	}
+}
+
+func (p *UserAgentMiddleware) GetUserAgent() string {
+	if len(p.List) == 0 {
+		return ""
+	}
+	randomIndex := rand.Intn(len(p.List))
+	pick := p.List[randomIndex]
+
+	return pick
+}
