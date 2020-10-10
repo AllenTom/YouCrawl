@@ -108,6 +108,7 @@ func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 
 }
 
+
 // add pipelines
 func (e *Engine) AddPipelines(pipelines ...Pipeline) {
 	for _, pipeline := range pipelines {
@@ -118,6 +119,11 @@ func (e *Engine) AddPipelines(pipelines ...Pipeline) {
 // add middleware
 func (e *Engine) UseMiddleware(middlewares ...Middleware) {
 	e.Middlewares = append(e.Middlewares, middlewares...)
+}
+
+// use taskPool
+func (e *Engine) UseTaskPool(taskPool TaskPool) {
+	e.Pool = taskPool
 }
 
 // add postprocess

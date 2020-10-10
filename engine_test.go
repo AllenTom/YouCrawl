@@ -30,14 +30,7 @@ func TestRequestWithURL(t *testing.T) {
 func TestEngine_Run(t *testing.T) {
 	e := NewEngine(&EngineOption{MaxRequest: 3})
 	e.AddURLs("https://www.example.com", "https://www.example.com", "https://www.example.com")
-	//e.AddHTMLParser(func(doc *goquery.Document, ctx Context) error {
-	//	ctx
-	//	return nil
-	//})
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
+	e.RunAndWait()
 }
 
 func TestParseHTML(t *testing.T) {
@@ -90,10 +83,7 @@ func TestCookie(t *testing.T) {
 		GetKey: nil,
 	})
 	e.UseMiddleware(cookieMiddleware)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
+	e.RunAndWait()
 }
 
 func TestNewTask(t *testing.T) {
@@ -103,10 +93,7 @@ func TestNewTask(t *testing.T) {
 	})
 	e.AddTasks(&addTask)
 	e.AddHTMLParser(DefaultTestParser)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	e.Run(&wg)
-	wg.Wait()
+	e.RunAndWait()
 }
 
 func TestRunWithDaemon(t *testing.T) {
@@ -127,4 +114,12 @@ func TestRunWithDaemon(t *testing.T) {
 	e.Pool.AddURLs("http://www.example.com")
 	e.StopPoolChan <- struct{}{}
 	wg.Wait()
+}
+
+func TestEngine_UseTaskPool(t *testing.T) {
+	e := NewEngine(&EngineOption{MaxRequest: 3})
+	taskPool := NewRequestPool(RequestPoolOption{},e.GlobalStore)
+	taskPool.AddURLs("https://www.example.com")
+	e.UseTaskPool(taskPool)
+	e.RunAndWait()
 }
