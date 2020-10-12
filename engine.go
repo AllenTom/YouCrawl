@@ -27,16 +27,17 @@ type Engine struct {
 	sync.Mutex
 	*EngineOption
 	// dispatch task
-	Pool          TaskPool
-	Parsers       []HTMLParser
-	Middlewares   []Middleware
-	Pipelines     []Pipeline
-	GlobalStore   GlobalStore
-	PostProcess   []PostProcess
+	Pool        TaskPool
+	Parsers     []HTMLParser
+	Middlewares []Middleware
+	Pipelines   []Pipeline
+	GlobalStore GlobalStore
+	PostProcess []PostProcess
+	Plugins     []Plugin
 	// receive signal: force stop pool
 	InterruptChan chan struct{}
 	// receive signal: stop pool when all task has done
-	StopPoolChan  chan struct{}
+	StopPoolChan chan struct{}
 }
 
 // share data in crawl process
@@ -108,7 +109,6 @@ func (e *Engine) AddHTMLParser(parsers ...HTMLParser) {
 
 }
 
-
 // add pipelines
 func (e *Engine) AddPipelines(pipelines ...Pipeline) {
 	for _, pipeline := range pipelines {
@@ -129,6 +129,11 @@ func (e *Engine) UseTaskPool(taskPool TaskPool) {
 // add postprocess
 func (e *Engine) AddPostProcess(postprocessList ...PostProcess) {
 	e.PostProcess = append(e.PostProcess, postprocessList...)
+}
+
+// add plugins
+func (e *Engine) AddPlugins(plugins ...Plugin) {
+	e.Plugins = append(e.Plugins, plugins...)
 }
 
 func CrawlProcess(taskChannel chan struct{}, e *Engine, task *Task) {
@@ -194,6 +199,9 @@ func (e *Engine) Run(wg *sync.WaitGroup) {
 		}
 
 	}()
+	for _, plugin := range e.Plugins {
+		go plugin.Run(e)
+	}
 Loop:
 	for {
 		<-taskChannel
