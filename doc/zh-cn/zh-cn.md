@@ -26,7 +26,7 @@ HTML parser : [PuerkitoBio/goquery](https://github.com/PuerkitoBio/goquery)
 3. [Pipeline](./pipeline.md)
 4. GlobalStore
 5. [PostProcess](./post-process.md)
-
+6. [Plugin](./plugin.md)
 ## 最简单的示例
 
 由于大部分组件是可选的，并不需要非常复杂的代码。

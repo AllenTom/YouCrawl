@@ -30,6 +30,7 @@ The crawler library contains the following components, which can be added as nee
 3. [Pipeline](doc/en/pipeline.md)
 4. GlobalStore
 5. [PostProcess](doc/en/post-process.md)
+6. [Plugin](doc/en/plugin.md)
 
 ## The simplest example
 

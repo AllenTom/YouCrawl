@@ -35,6 +35,8 @@ type RequestPool struct {
 }
 
 func (p *RequestPool) GetCompleteCount() (int, error) {
+	p.Lock()
+	defer p.Unlock()
 	count := 0
 	for _, task := range p.Tasks {
 		if task.Completed {
@@ -45,6 +47,8 @@ func (p *RequestPool) GetCompleteCount() (int, error) {
 }
 
 func (p *RequestPool) GetUnRequestCount() (int, error) {
+	p.Lock()
+	defer p.Unlock()
 	count := 0
 	for _, task := range p.Tasks {
 		if !task.Requested{
@@ -55,6 +59,8 @@ func (p *RequestPool) GetUnRequestCount() (int, error) {
 }
 
 func (p *RequestPool) GetTotal() (int, error) {
+	p.Lock()
+	defer p.Unlock()
 	return p.Total,nil
 }
 
