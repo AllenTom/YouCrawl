@@ -15,6 +15,9 @@ type TaskPool interface {
 	GetDoneChan() chan struct{}
 	Close()
 	SetPrevent(isPrevent bool)
+	GetTotal() (int,error)
+	GetUnRequestCount() (int,error)
+	GetCompleteCount() (int,error)
 }
 
 type RequestPool struct {
@@ -29,6 +32,30 @@ type RequestPool struct {
 	PreventStop   bool
 	Store         GlobalStore
 	sync.Mutex
+}
+
+func (p *RequestPool) GetCompleteCount() (int, error) {
+	count := 0
+	for _, task := range p.Tasks {
+		if task.Completed {
+			count += 1
+		}
+	}
+	return count,nil
+}
+
+func (p *RequestPool) GetUnRequestCount() (int, error) {
+	count := 0
+	for _, task := range p.Tasks {
+		if !task.Requested{
+			count += 1
+		}
+	}
+	return count,nil
+}
+
+func (p *RequestPool) GetTotal() (int, error) {
+	return p.Total,nil
 }
 
 func (p *RequestPool) SetPrevent(isPrevent bool) {
