@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type Middleware interface {
@@ -147,4 +148,23 @@ func (p *UserAgentMiddleware) GetUserAgent() string {
 	pick := p.List[randomIndex]
 
 	return pick
+}
+
+type DelayMiddleware struct {
+	Min int
+	Max int
+	Fixed int
+}
+
+func (d *DelayMiddleware) Process(_ *http.Client, r *http.Request, _ *Context) {
+	if d.Fixed != 0 {
+		<- time.After(time.Duration(d.Fixed) * time.Second)
+	}else if d.Min < d.Max{
+		randomValue := RandomIntRangeWithStringSeed(d.Min,d.Max,r.URL.String())
+		<- time.After(time.Duration(randomValue) * time.Second)
+	}
+}
+
+func (d *DelayMiddleware) RequestCallback(_ *http.Client, _ *http.Request, _ *Context) {
+
 }
