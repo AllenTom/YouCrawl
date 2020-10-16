@@ -24,3 +24,29 @@ type ImageDownloadPipeline struct {
 	Middlewares        []Middleware
 }
 ```
+
+## ItemChannelPipeline
+这个Pipeline支持向指定的Channel发送当前Item  
+在一些场景中，需要向正在执行的Engine，例如开启Daemon的Engine，输入任务，并将获取到结果返回。
+如下：
+```go
+fun test () {
+    e.Pool.AddTasks(&Task{
+                Url:       "http://www.example.com",
+                Context:   Context{
+                    Item: DefaultItem{Store: map[string]interface{}{
+                        ItemKeyChannelToken: "thisistoken",
+                    }},
+                },
+            })
+
+    resultChannel := make(chan interface{})
+    channelPipeline.ChannelMapping.Store("thisistoken",resultChannel)
+    result := <- resultChannel
+    item := result.(DefaultItem)
+    fmt.Println(item.GetString("title"))
+}
+```
+首先，生成一个`ChannelToken`（这里可以复用ID），在pipeline的Map中添加相应的`Channel`；然后在添加任务时提供相应的`ID`。我们就可以通过Channel中取出结果。
+
+**注意**：DefaultItem已经默认实现了`ChannelPipelineToken`的，对于自定义的Item，需要实现该接口才可以正常工作。

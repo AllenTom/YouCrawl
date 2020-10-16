@@ -23,3 +23,31 @@ type ImageDownloadPipeline struct {
 	Middlewares        []Middleware
 }
 ```
+
+## ItemChannelPipeline
+This Pipeline supports sending the current Item to the specified Channel. 
+
+In some scenarios, it is necessary to input tasks to the executing Engine, such as an Engine in daemon mode, and obtain results.
+
+Example code:
+```go
+fun test () {
+    e.Pool.AddTasks(&Task{
+                Url:       "http://www.example.com",
+                Context:   Context{
+                    Item: DefaultItem{Store: map[string]interface{}{
+                        ItemKeyChannelToken: "thisistoken",
+                    }},
+                },
+            })
+
+    resultChannel := make(chan interface{})
+    channelPipeline.ChannelMapping.Store("thisistoken",resultChannel)
+    result := <- resultChannel
+    item := result.(DefaultItem)
+    fmt.Println(item.GetString("title"))
+}
+```
+First, generate a `ChannelToken` (ID can be reused), add the corresponding `Channel` to the pipeline Map; then provide the corresponding ʻID` when adding tasks. We can retrieve the result through the Channel.
+
+**Note**: DefaultItem has implemented `ChannelPipelineToken` by default. For custom Item, you need to implement this interface to work properly.
