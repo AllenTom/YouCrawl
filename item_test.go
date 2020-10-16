@@ -73,6 +73,10 @@ func TestItem_GetFloat64(t *testing.T) {
 
 }
 
+func TestDefaultItem_GetToken(t *testing.T) {
+	TestItem.SetValue(ItemKeyChannelToken,"thisistoken")
+	TestItem.GetToken()
+}
 type WebItems struct {
 	Label string
 }

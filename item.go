@@ -7,8 +7,19 @@ var (
 	TypeError          = errors.New("error type of item value")
 )
 
+const (
+	ItemKeyChannelToken ="channelToken"
+)
 type DefaultItem struct {
 	Store map[string]interface{}
+}
+
+func (i DefaultItem) GetToken() string {
+	tokenString,err := i.GetString(ItemKeyChannelToken)
+	if err != nil {
+		return ""
+	}
+	return tokenString
 }
 
 func (i *DefaultItem) GetValue(key string) (interface{}, error) {

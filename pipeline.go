@@ -148,3 +148,22 @@ func (i *ImageDownloadPipeline) Process(item interface{}, store GlobalStore) err
 	}
 	return nil
 }
+
+type ChannelPipelineToken interface {
+	GetToken() string
+}
+type ChannelPipeline struct {
+	ChannelMapping sync.Map
+}
+
+func (p *ChannelPipeline) Process(item interface{}, _ GlobalStore) error {
+	if channelToken,isToken := item.(ChannelPipelineToken);isToken {
+		tokenString := channelToken.GetToken()
+
+		if rawChannel,isExist := p.ChannelMapping.Load(tokenString);isExist {
+			channel := rawChannel.(chan interface{})
+			channel <- item
+		}
+	}
+	return nil
+}

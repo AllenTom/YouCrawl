@@ -70,3 +70,36 @@ func TestImageDownloadPipeline_Process(t *testing.T) {
 		}
 	}()
 }
+
+func TestChannelPipeline_Process(t *testing.T) {
+	e := NewEngine(&EngineOption{MaxRequest: 2})
+
+	e.AddHTMLParser(func(ctx *Context) error {
+		item := ctx.Item.(DefaultItem)
+		doc := ctx.Doc
+		title := doc.Find("title").Text()
+		item.SetValue("title", title)
+
+		return nil
+	})
+	channelPipeline := ChannelPipeline{}
+	go func() {
+		e.Pool.AddTasks(&Task{
+			Url:       "http://www.example.com",
+			Context:   Context{
+				Item: DefaultItem{Store: map[string]interface{}{
+					ItemKeyChannelToken: "thisistoken",
+				}},
+			},
+		})
+
+		resultChannel := make(chan interface{})
+		channelPipeline.ChannelMapping.Store("thisistoken",resultChannel)
+		result := <- resultChannel
+		item := result.(DefaultItem)
+		fmt.Println(item.GetString("title"))
+	}()
+	e.AddPipelines(&channelPipeline)
+	e.UseMiddleware(&UserAgentMiddleware{})
+	e.RunAndWait()
+}
