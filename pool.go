@@ -15,9 +15,9 @@ type TaskPool interface {
 	GetDoneChan() chan struct{}
 	Close()
 	SetPrevent(isPrevent bool)
-	GetTotal() (int,error)
-	GetUnRequestCount() (int,error)
-	GetCompleteCount() (int,error)
+	GetTotal() (int, error)
+	GetUnRequestCount() (int, error)
+	GetCompleteCount() (int, error)
 }
 
 type RequestPool struct {
@@ -27,11 +27,10 @@ type RequestPool struct {
 	NextTask      *Task
 	GetTaskChan   chan *Task
 	DoneChan      chan struct{}
-	CloseFlag     int64
 	CompleteChan  chan *Task
 	PreventStop   bool
 	Store         GlobalStore
-	sync.Mutex
+	sync.RWMutex
 }
 
 func (p *RequestPool) GetCompleteCount() (int, error) {
@@ -43,7 +42,7 @@ func (p *RequestPool) GetCompleteCount() (int, error) {
 			count += 1
 		}
 	}
-	return count,nil
+	return count, nil
 }
 
 func (p *RequestPool) GetUnRequestCount() (int, error) {
@@ -51,17 +50,17 @@ func (p *RequestPool) GetUnRequestCount() (int, error) {
 	defer p.Unlock()
 	count := 0
 	for _, task := range p.Tasks {
-		if !task.Requested{
+		if !task.Requested {
 			count += 1
 		}
 	}
-	return count,nil
+	return count, nil
 }
 
 func (p *RequestPool) GetTotal() (int, error) {
 	p.Lock()
 	defer p.Unlock()
-	return p.Total,nil
+	return p.Total, nil
 }
 
 func (p *RequestPool) SetPrevent(isPrevent bool) {
@@ -91,7 +90,6 @@ func NewRequestPool(option RequestPoolOption, store GlobalStore) *RequestPool {
 	pool := &RequestPool{
 		Tasks:         []Task{},
 		DoneChan:      make(chan struct{}),
-		CloseFlag:     0,
 		Total:         0,
 		CompleteCount: 0,
 		Store:         store,
@@ -134,7 +132,7 @@ func (p *RequestPool) AddTasks(tasks ...*Task) {
 
 	// suspend task requirement exist,resume
 	// see also `RequestPool.GetOneTask` method
-	if p.GetTaskChan != nil && p.CloseFlag == 0 {
+	if p.GetTaskChan != nil {
 		resumeTask := p.GetUnRequestedTask()
 		if resumeTask != nil {
 			resumeTask = p.initTask(resumeTask)
@@ -165,7 +163,7 @@ func (p *RequestPool) AddURLs(urls ...string) {
 
 	// suspend task requirement exist,resume
 	// see also `RequestPool.GetOneTask` method
-	if p.GetTaskChan != nil && p.CloseFlag == 0 {
+	if p.GetTaskChan != nil {
 		resumeTask := p.GetUnRequestedTask()
 		if resumeTask != nil {
 			resumeTask = p.initTask(resumeTask)
@@ -185,22 +183,16 @@ func (p *RequestPool) GetOneTask(e *Engine) <-chan *Task {
 	taskChan := make(chan *Task)
 	go func(callbackChan chan *Task) {
 		p.Lock()
-		defer p.Unlock()
-		if p.CloseFlag == 1 {
-			return
-		}
 		unRequestedTask := p.GetUnRequestedTask()
 		if unRequestedTask != nil {
 			unRequestedTask = p.initTask(unRequestedTask)
 			unRequestedTask.Requested = true
 			callbackChan <- unRequestedTask
-			return
 		}
-
-		// no more request,suspend task
-		EngineLogger.Info("suspend get task ")
-		p.GetTaskChan = callbackChan
-
+		waitChannel := make(chan *Task)
+		p.GetTaskChan = waitChannel
+		p.Unlock()
+		callbackChan <- <-waitChannel
 	}(taskChan)
 	return taskChan
 }
@@ -228,15 +220,6 @@ func (p *RequestPool) OnTaskDone(task *Task) {
 		}
 	}
 
-	// check weather all task are complete
-	if p.CloseFlag == 0 {
-		for idx := range p.Tasks {
-			if !p.Tasks[idx].Requested || !p.Tasks[idx].Completed {
-				return
-			}
-		}
-	}
-
 	// no new request
 	if !p.PreventStop {
 		EngineLogger.Info("no more task to resume , go to done!")
@@ -251,5 +234,5 @@ func (p *RequestPool) GetDoneChan() chan struct{} {
 func (p *RequestPool) Close() {
 	p.Lock()
 	defer p.Unlock()
-	p.CloseFlag = 1
+	p.DoneChan <- struct{}{}
 }

@@ -204,13 +204,14 @@ func (e *Engine) Run(wg *sync.WaitGroup) {
 	}
 Loop:
 	for {
-		<-taskChannel
 		select {
 		case task := <-e.Pool.GetOneTask(e):
+			<-taskChannel
 			go CrawlProcess(taskChannel, e, task)
 		case <-e.Pool.GetDoneChan():
 			break Loop
 		}
+
 	}
 
 	EngineLogger.Info("into post process")

@@ -3,7 +3,6 @@ package youcrawl
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	"sync"
 	"testing"
 	"time"
 )
@@ -102,18 +101,15 @@ func TestRunWithDaemon(t *testing.T) {
 		Daemon:     true,
 	})
 	e.AddHTMLParser(DefaultTestParser)
-	e.AddPostProcess()
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func(wg *sync.WaitGroup) {
-		e.Run(wg)
-	}(&wg)
-
-	<- time.After(1 * time.Second)
-	e.Pool.AddURLs("http://www.example.com")
-	e.StopPoolChan <- struct{}{}
-	wg.Wait()
+	go func() {
+		<- time.After(1 * time.Second)
+		e.Pool.AddURLs("http://example.com")
+	}()
+	go func() {
+		<- time.After(4 * time.Second)
+		e.StopPoolChan <- struct{}{}
+	}()
+	e.RunAndWait()
 }
 
 func TestEngine_UseTaskPool(t *testing.T) {
