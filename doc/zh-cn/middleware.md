@@ -30,3 +30,13 @@ cookieMiddleware := NewCookieMiddleware(
 })
 e.UseMiddleware(cookieMiddleware)
 ```
+
+## Delay Middleware
+在请求时，有可能需要延迟请求的需求，使得请求更加自然。Middleware支持随机产生也支持固定值，单位为秒。
+```go
+delayMiddleware := DelayMiddleware{
+		Min:   1,
+		Max:   2,
+		Fixed: 1
+	}
+```

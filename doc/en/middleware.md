@@ -31,3 +31,13 @@ cookieMiddleware := NewCookieMiddleware(
 })
 e.UseMiddleware(cookieMiddleware)
 ```
+
+## Delay Middleware
+At requesting, it may be necessary to delay the request to make more natural. Middleware supports `random` or `fixed` values in `second`.
+```go
+delayMiddleware := DelayMiddleware{
+		Min:   1,
+		Max:   2,
+		Fixed: 1
+	}
+```
